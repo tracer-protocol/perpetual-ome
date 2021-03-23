@@ -1,0 +1,6 @@
+/target
+
+msg.tmp
+*.tmp
+*.secret
+.DS_Store
