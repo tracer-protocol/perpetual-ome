@@ -130,6 +130,16 @@ pub async fn create_order_handler(
     state: Arc<Mutex<OmeState>>,
     rpc_endpoint: String,
 ) -> Result<impl Reply, Rejection> {
+    /* bounds check price and amount */
+    if request.price > U256::from(u128::MAX)
+        || request.amount > U256::from(u128::MAX)
+    {
+        return Ok(warp::reply::with_status(
+            "Integers out of bounds",
+            http::StatusCode::BAD_REQUEST,
+        ));
+    }
+
     let new_order: Order = Order::from(request);
 
     info!("Creating order {}...", new_order);
