@@ -19,7 +19,13 @@ pub fn from_hex_se<S>(x: &U256, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
-    serializer.serialize_u64(x.as_u64())
+    /* try to convert to an unsigned 128-bit integer, otherwise strip high bits */
+    let casted_val: u128 = match *x {
+        x if x <= U256::from(u128::MAX) => x.as_u128(),
+        _ => x.low_u128(),
+    };
+
+    serializer.serialize_u128(casted_val)
 }
 
 /// Helper to convert from hexadecimal strings to decimal strings
