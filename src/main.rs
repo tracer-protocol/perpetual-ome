@@ -157,7 +157,7 @@ async fn main() {
         .and_then(handler::read_book_handler);
 
     /* define CRUD routes for orders */
-    let create_order_route = warp::path!("book" / Address)
+    let create_order_route = warp::path!("book" / Address / "order")
         .and(warp::post())
         .and(warp::body::json())
         .and(warp::any().map(move || create_order_state.clone()))
