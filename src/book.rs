@@ -80,7 +80,7 @@ impl Book {
         /* search bids */
         for (_, curr_level) in self.bids.iter() {
             for curr_order in curr_level.iter() {
-                if curr_order.id() == id {
+                if curr_order.id == id {
                     return Some(curr_order);
                 }
             }
@@ -89,7 +89,7 @@ impl Book {
         /* search asks */
         for (_, curr_level) in self.asks.iter() {
             for curr_order in curr_level.iter() {
-                if curr_order.id() == id {
+                if curr_order.id == id {
                     return Some(curr_order);
                 }
             }
@@ -103,7 +103,7 @@ impl Book {
         /* search bids */
         for (_, curr_level) in self.bids.iter_mut() {
             for curr_order in curr_level.iter_mut() {
-                if curr_order.id() == id {
+                if curr_order.id == id {
                     return Some(curr_order);
                 }
             }
@@ -112,7 +112,7 @@ impl Book {
         /* search asks */
         for (_, curr_level) in self.asks.iter_mut() {
             for curr_order in curr_level.iter_mut() {
-                if curr_order.id() == id {
+                if curr_order.id == id {
                     return Some(curr_order);
                 }
             }
@@ -153,9 +153,9 @@ impl Book {
         info!("Received {}", order);
 
         // load in book state
-        let order_side = order.side();
-        let order_price = order.price();
-        let mut order_amount = order.amount();
+        let order_side = order.side;
+        let order_price = order.price;
+        let mut order_amount = order.amount;
         let bid_list = RefCell::new(&mut self.bids);
         let ask_list = RefCell::new(&mut self.asks);
 
@@ -192,11 +192,11 @@ impl Book {
             // iterate over orders at the current "best" price
             while let Some(mut matching_order) = orders_queue.pop_front() {
                 // compute new amounts for our orders using temp variables
-                let mut matching_amount = matching_order.amount();
+                let mut matching_amount = matching_order.amount;
                 *matching_order.amount_mut() =
                     matching_amount.saturating_sub(order_amount);
                 order_amount = order_amount.saturating_sub(matching_amount);
-                matching_amount = matching_order.amount();
+                matching_amount = matching_order.amount;
 
                 // forward to the contracts
                 info!("Forwarding ({},{})", order, matching_order);
@@ -302,8 +302,8 @@ impl Book {
     #[allow(clippy::unnecessary_wraps)]
     fn add_order(&mut self, order: Order) -> Result<(), BookError> {
         let tmp_order: Order = order.clone();
-        let order_side = order.side();
-        let order_price = order.price();
+        let order_side = order.side;
+        let order_price = order.price;
         let orders = VecDeque::new();
 
         match order_side {
@@ -335,7 +335,7 @@ impl Book {
     */
     // fn executioner(order: Order, order_level: VecDeque<Order>) {
     //     //The algo shoud continue to fill orders until the Order coming in is complete
-    //     println!("in execute with an order price of {}", order.price())
+    //     println!("in execute with an order price of {}", order.price)
     // }
 
     /*************HELPER FUNCTIONS FOR TESTING START****************/
@@ -362,7 +362,7 @@ impl Book {
     ) -> Result<Option<DateTime<Utc>>, BookError> {
         for (_, orders) in self.bids.iter_mut() {
             for (index, order) in orders.iter_mut().enumerate() {
-                if order.id() == order_id {
+                if order.id == order_id {
                     info!("Cancelled {}", order.clone());
                     orders.remove(index);
                     return Ok(Some(Utc::now()));
@@ -372,7 +372,7 @@ impl Book {
 
         for (_, orders) in self.asks.iter_mut() {
             for (index, order) in orders.iter_mut().enumerate() {
-                if order.id() == order_id {
+                if order.id == order_id {
                     info!("Cancelled {}", order.clone());
                     orders.remove(index);
                     return Ok(Some(Utc::now()));

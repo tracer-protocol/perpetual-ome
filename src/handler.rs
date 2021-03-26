@@ -144,14 +144,6 @@ pub async fn create_order_handler(
 
     info!("Creating order {}...", new_order);
 
-    /* perform signature verification */
-    if !new_order.verify() {
-        return Ok(warp::reply::with_status(
-            "Invalid signature",
-            http::StatusCode::FORBIDDEN,
-        ));
-    }
-
     /* acquire lock on global state */
     let mut ome_state: MutexGuard<OmeState> = state.lock().await;
 
