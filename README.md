@@ -6,6 +6,7 @@ To get up to speed with development:
 
     $ git clone git@github.com:securedatalinks/tracer-ome.git
     $ cd tracer-ome
+    $ rustup override set nightly
     $ cargo build
     $ cargo doc --open # read the manual
     $ grep TODO src/*.rs
