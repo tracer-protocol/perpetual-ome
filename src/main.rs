@@ -2,6 +2,7 @@
 #![feature(result_contains_err)]
 #![feature(destructuring_assignment)]
 
+use std::env;
 use std::net::IpAddr;
 use std::path::Path;
 use std::str::FromStr;
@@ -82,17 +83,22 @@ async fn main() {
         )
         .get_matches();
 
-    /* determine what address to listen on - either the address the user
-     * provided or the default address (see `DEFAULT_IP`) */
-    let listen_address: IpAddr = match IpAddr::from_str(
-        matches.value_of("address").unwrap_or(DEFAULT_IP),
-    ) {
-        Ok(addr) => addr,
-        Err(e) => {
-            eprintln!("{}", e);
-            return;
-        }
-    };
+    /* determine what address to listen on, in this order:
+     *
+     * 1. CLI
+     * 2. Environment variable
+     * 3. Hardcoded default
+     */
+    let listen_address: IpAddr =
+        match IpAddr::from_str(matches.value_of("address").ok_or(
+            env::var("OME_LISTEN_ADDRESS").unwrap_or(DEFAULT_IP.to_string()),
+        ).unwrap()) {
+            Ok(t) => t,
+            Err(e) => {
+                eprintln!("{}", e);
+                return;
+            }
+        };
 
     /* determine what port number to listen on - either the port number the user
      * provided or the default port number (see `DEFAULT_PORT`) */
