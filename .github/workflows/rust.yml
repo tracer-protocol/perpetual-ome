@@ -9,12 +9,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
-    - name: Get Clippy
-      run: rustup component add clippy --toolchain nightly-x86_64-unknown-linux-gnu
     - name: Get Rustfmt
       run: rustup component add rustfmt
     - name: Get Rust Nightly
       run: rustup toolchain install nightly --allow-downgrade && rustup override set nightly
+    - name: Get Clippy
+      run: rustup component add clippy --toolchain nightly-x86_64-unknown-linux-gnu
     - name: Build
       run: cargo build --verbose
     - name: Run tests
