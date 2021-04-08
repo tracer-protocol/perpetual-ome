@@ -192,19 +192,20 @@ impl Book {
             // iterate over orders at the current "best" price
             while let Some(mut matching_order) = orders_queue.pop_front() {
                 // compute new amounts for our orders using temp variables
-                let mut matching_amount = matching_order.amount;
+                let match_to_submit = matching_order.clone();
+                let mut matching_amount = matching_order.amount();
                 *matching_order.amount_mut() =
                     matching_amount.saturating_sub(order_amount);
                 order_amount = order_amount.saturating_sub(matching_amount);
                 matching_amount = matching_order.amount;
 
                 // forward to the contracts
-                info!("Forwarding ({},{})", order, matching_order);
+                info!("Forwarding ({},{})", order, match_to_submit);
 
                 /* push to contract */
                 match rpc::send_matched_orders(
                     order.clone(),
-                    matching_order.clone(),
+                    match_to_submit,
                     executioner_address.clone(),
                 )
                 .await
