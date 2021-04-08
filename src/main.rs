@@ -89,25 +89,38 @@ async fn main() {
      * 2. Environment variable
      * 3. Hardcoded default
      */
-    let listen_address: IpAddr =
-        match IpAddr::from_str(matches.value_of("address").ok_or(
-            env::var("OME_LISTEN_ADDRESS").unwrap_or(DEFAULT_IP.to_string()),
-        ).unwrap()) {
-            Ok(t) => t,
-            Err(e) => {
-                eprintln!("{}", e);
+    let listen_address: IpAddr = match IpAddr::from_str(
+        matches
+            .value_of("address")
+            .ok_or(
+                env::var("OME_LISTEN_ADDRESS")
+                    .unwrap_or(DEFAULT_IP.to_string()),
+            )
+            .unwrap(),
+    ) {
+        Ok(t) => t,
+        Err(e) => {
+            eprintln!("{}", e);
+            return;
+        }
+    };
+
+    /* determine what port to listen on, in this order:
+     *
+     * 1. CLI
+     * 2. Environment variable
+     * 3. Hardcoded default
+     */
+    let listen_port: u16 = match matches.value_of("port").ok_or(
+        env::var("OME_LISTEN_PORT").unwrap_or(DEFAULT_PORT.parse().unwrap()),
+    ) {
+        Ok(t) => match t.parse::<u16>() {
+            Ok(port) => port,
+            Err(err) => {
+                eprintln!("{}", err);
                 return;
             }
-        };
-
-    /* determine what port number to listen on - either the port number the user
-     * provided or the default port number (see `DEFAULT_PORT`) */
-    let listen_port: u16 = match matches
-        .value_of("port")
-        .unwrap_or(DEFAULT_PORT)
-        .parse::<u16>()
-    {
-        Ok(p) => p,
+        },
         Err(e) => {
             eprintln!("{}", e);
             return;
