@@ -1,10 +1,7 @@
 #![feature(map_first_last)]
 #![feature(result_contains_err)]
 #![feature(destructuring_assignment)]
-
-use std::net::IpAddr;
-use std::path::Path;
-use std::str::FromStr;
+use std::convert::TryInto;
 use std::sync::Arc;
 
 use clap::{App, Arg};
@@ -19,6 +16,7 @@ extern crate enum_display_derive;
 extern crate log;
 extern crate pretty_env_logger;
 
+pub mod args;
 pub mod book;
 pub mod handler;
 pub mod order;
@@ -30,17 +28,9 @@ pub mod util;
 #[cfg(test)]
 pub mod book_tests;
 
+use crate::args::Arguments;
 use crate::order::OrderId;
 use crate::state::OmeState;
-
-/// The default IP address that the OME will listen on
-pub const DEFAULT_IP: &str = "0.0.0.0";
-
-/// The default TCP port number that the OME will listen on
-pub const DEFAULT_PORT: &str = "8989";
-
-/// The default file path for reading and writing state dumps
-pub const DEFAULT_DUMPFILE: &str = ".omedump.json";
 
 #[tokio::main]
 async fn main() {
@@ -77,45 +67,20 @@ async fn main() {
                 .long("executioner_address")
                 .value_name("executioner_address")
                 .help("Address of the Web3 executioner")
-                .takes_value(true)
-                .required(true),
+                .takes_value(true),
         )
         .get_matches();
 
-    /* determine what address to listen on - either the address the user
-     * provided or the default address (see `DEFAULT_IP`) */
-    let listen_address: IpAddr = match IpAddr::from_str(
-        matches.value_of("address").unwrap_or(DEFAULT_IP),
-    ) {
-        Ok(addr) => addr,
+    let arguments: Arguments = match matches.try_into() {
+        Ok(t) => t,
         Err(e) => {
             eprintln!("{}", e);
             return;
         }
     };
 
-    /* determine what port number to listen on - either the port number the user
-     * provided or the default port number (see `DEFAULT_PORT`) */
-    let listen_port: u16 = match matches
-        .value_of("port")
-        .unwrap_or(DEFAULT_PORT)
-        .parse::<u16>()
-    {
-        Ok(p) => p,
-        Err(e) => {
-            eprintln!("{}", e);
-            return;
-        }
-    };
-
-    let dumpfile_path: &Path =
-        Path::new(matches.value_of("dumpfile").unwrap_or(DEFAULT_DUMPFILE));
-
-    let executioner_address: String =
-        matches.value_of("executioner_address").unwrap().to_owned();
-
-    let internal_state = if util::is_existing_state(dumpfile_path) {
-        match OmeState::from_dumpfile(dumpfile_path) {
+    let internal_state = if util::is_existing_state(&arguments.dumpfile_path) {
+        match OmeState::from_dumpfile(&arguments.dumpfile_path) {
             Some(s) => s,
             None => OmeState::new(),
         }
@@ -157,11 +122,12 @@ async fn main() {
         .and_then(handler::read_book_handler);
 
     /* define CRUD routes for orders */
-    let create_order_route = warp::path!("book" / Address)
+    let tmp_args: Arguments = arguments.clone();
+    let create_order_route = warp::path!("book" / Address / "order")
         .and(warp::post())
         .and(warp::body::json())
         .and(warp::any().map(move || create_order_state.clone()))
-        .and(warp::any().map(move || executioner_address.clone()))
+        .and(warp::any().map(move || tmp_args.executioner_address.clone()))
         .and_then(handler::create_order_handler);
     let read_order_route = warp::path!("book" / Address / "order" / OrderId)
         .and(warp::get())
@@ -202,5 +168,7 @@ async fn main() {
     let routes = book_routes.or(order_routes).with(cors);
 
     /* start the web server */
-    warp::serve(routes).run((listen_address, listen_port)).await;
+    warp::serve(routes)
+        .run((arguments.listen_address, arguments.listen_port))
+        .await;
 }

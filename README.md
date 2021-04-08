@@ -6,13 +6,19 @@ To get up to speed with development:
 
     $ git clone git@github.com:securedatalinks/tracer-ome.git
     $ cd tracer-ome
+    $ rustup override set nightly
     $ cargo build
     $ cargo doc --open # read the manual
     $ grep TODO src/*.rs
 
-## Testing
+## Setup guide
+Follow the above steps to install all the required dependencies.
+
+To set the debugging level, use
 `export RUST_LOG=info`
-`cargo test`
+To run the OME, with the executioner running locally, use
+`cargo run -- --executioner_address "http://localhost:3000"`
+
 ## Common Issues
 
 
@@ -36,3 +42,12 @@ Some helpful links
 
 #### Fix
 Create a rust-toolchain file in the root of your project with your desired toolchain as per [Switching betwwen toolchains](https://stackoverflow.com/questions/58226545/how-to-switch-between-rust-toolchains)
+
+## Deployment
+To deploy changes to GCP, use the following. Note tthat currently the executioner endpoint is defined in the Dockerfile. Ensure this endpoint is correctly set before building and pushing to GCP.
+### Build and tag the image
+`docker build . -t gcr.io/tracer-protocol-testing/ome`
+
+### Push to GCR
+The executioner can easily be deployed to GCP by running the following.
+`docker push gcr.io/tracer-protocol-testing/ome`
