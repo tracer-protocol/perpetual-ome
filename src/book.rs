@@ -193,8 +193,8 @@ impl Book {
             while let Some(mut matching_order) = orders_queue.pop_front() {
                 // compute new amounts for our orders using temp variables
                 let match_to_submit = matching_order.clone();
-                let mut matching_amount = matching_order.amount();
-                *matching_order.amount_mut() =
+                let mut matching_amount = matching_order.amount;
+                matching_order.amount =
                     matching_amount.saturating_sub(order_amount);
                 order_amount = order_amount.saturating_sub(matching_amount);
                 matching_amount = matching_order.amount;
