@@ -155,6 +155,12 @@ async fn main() {
 
     let cors = warp::cors()
         .allow_any_origin()
+        .allow_headers(vec![
+            "Origin",
+            "Access-Control-Request-Headers",
+            "Content-Type",
+            "Access-Control-Allow-Origin",
+        ])
         .allow_methods(vec!["GET", "POST", "PUT", "DELETE"]);
 
     /* aggregate all of our routes */
