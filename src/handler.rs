@@ -25,17 +25,17 @@ pub struct CreateBookRequest {
 /// Represents an API request to create a new order
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct CreateOrderRequest {
-    user: Address, /* Ethereum address of trader */
-    target_tracer: Address,  /* Ethereum address of the Tracer smart contract */
-    side: OrderSide,  /* side of the market of the order */
+    user: Address,          /* Ethereum address of trader */
+    target_tracer: Address, /* Ethereum address of the Tracer smart contract */
+    side: OrderSide,        /* side of the market of the order */
     #[serde(serialize_with = "from_hex_se", deserialize_with = "from_hex_de")]
     price: U256, /* price */
     #[serde(serialize_with = "from_hex_se", deserialize_with = "from_hex_de")]
     amount: U256, /* quantity */
     #[serde(with = "ts_seconds")]
     expiration: DateTime<Utc>, /* expiration of the order */
-    signed_data: Vec<u8>, /* digital signature of the order */
-    nonce: U256,      /* order nonce */
+    signed_data: Vec<u8>,   /* digital signature of the order */
+    nonce: U256,            /* order nonce */
 }
 
 impl From<CreateOrderRequest> for Order {
