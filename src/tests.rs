@@ -24,13 +24,13 @@ mod order_tests {
             nonce,
         );
 
-        assert_eq!(order.address(), address);
-        assert_eq!(order.market(), market_address);
-        assert_eq!(order.side(), OrderSide::Bid);
-        assert_eq!(order.price(), price);
-        assert_eq!(order.amount(), amount);
-        assert_eq!(order.nonce(), nonce);
-        assert!(order.signed_data().is_empty());
+        assert_eq!(order.user, address);
+        assert_eq!(order.target_tracer, market_address);
+        assert_eq!(order.side, OrderSide::Bid);
+        assert_eq!(order.price, price);
+        assert_eq!(order.amount, amount);
+        assert_eq!(order.nonce, nonce);
+        assert!(order.signed_data.is_empty());
     }
 }
 
