@@ -25,24 +25,24 @@ pub struct CreateBookRequest {
 /// Represents an API request to create a new order
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct CreateOrderRequest {
-    address: Address, /* Ethereum address of trader */
-    market: Address,  /* Ethereum address of the Tracer smart contract */
-    side: OrderSide,  /* side of the market of the order */
+    user: Address,          /* Ethereum address of trader */
+    target_tracer: Address, /* Ethereum address of the Tracer smart contract */
+    side: OrderSide,        /* side of the market of the order */
     #[serde(serialize_with = "from_hex_se", deserialize_with = "from_hex_de")]
     price: U256, /* price */
     #[serde(serialize_with = "from_hex_se", deserialize_with = "from_hex_de")]
     amount: U256, /* quantity */
     #[serde(with = "ts_seconds")]
     expiration: DateTime<Utc>, /* expiration of the order */
-    signed_data: Vec<u8>, /* digital signature of the order */
-    nonce: U256,      /* order nonce */
+    signed_data: Vec<u8>,   /* digital signature of the order */
+    nonce: U256,            /* order nonce */
 }
 
 impl From<CreateOrderRequest> for Order {
     fn from(value: CreateOrderRequest) -> Self {
         /* extract request fields */
-        let address: Address = value.address;
-        let market: Address = value.market;
+        let user: Address = value.user;
+        let target_tracer: Address = value.target_tracer;
         let side: OrderSide = value.side;
         let price: U256 = value.price;
         let amount: U256 = value.amount;
@@ -52,8 +52,8 @@ impl From<CreateOrderRequest> for Order {
 
         /* construct order */
         Order::new(
-            address,
-            market,
+            user,
+            target_tracer,
             side,
             price,
             amount,
@@ -143,14 +143,6 @@ pub async fn create_order_handler(
     let new_order: Order = Order::from(request);
 
     info!("Creating order {}...", new_order);
-
-    /* perform signature verification */
-    if !new_order.verify() {
-        return Ok(warp::reply::with_status(
-            "Invalid signature",
-            http::StatusCode::FORBIDDEN,
-        ));
-    }
 
     /* acquire lock on global state */
     let mut ome_state: MutexGuard<OmeState> = state.lock().await;
