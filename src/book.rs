@@ -328,22 +328,6 @@ impl Book {
         Ok(())
     }
 
-    /**
-        This function takes in an order and a OrderLevel (Queue) and executes
-        the trade. If the order was successfully filled it will return true.
-        On the even that the required order is larger than the entire level
-        it will return false
-    */
-    // fn executioner(order: Order, order_level: VecDeque<Order>) {
-    //     //The algo shoud continue to fill orders until the Order coming in is complete
-    //     println!("in execute with an order price of {}", order.price())
-    // }
-
-    /*************HELPER FUNCTIONS FOR TESTING START****************/
-    // pub fn get_asks(&self) -> BTreeMap<U256, VecDeque<Order>> {
-    //     self.asks
-    // }
-
     /*******************HELPER FUNCTIONS FOR TESTING END************************/
 
     /// Cancels the open order currently in the order book with the matching ID
