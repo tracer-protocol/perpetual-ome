@@ -9,8 +9,8 @@ extern crate enum_display_derive;
 extern crate log;
 extern crate pretty_env_logger;
 
-pub mod order;
 pub mod book;
-pub mod util;
+pub mod order;
 pub mod rpc;
 pub mod state;
+pub mod util;
