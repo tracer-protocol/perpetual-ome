@@ -1,5 +1,5 @@
 [package]
-name = "tracer-ome"
+name = "ome"
 version = "0.1.0"
 authors = ["Jack McPherson <jackmcpherson@mycelium.ventures>"]
 edition = "2018"

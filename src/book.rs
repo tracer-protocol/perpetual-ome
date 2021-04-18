@@ -327,7 +327,7 @@ impl Book {
         // TODO: Not sure if we will ever run this far.
         Ok(())
     }
-    
+
     /*******************HELPER FUNCTIONS FOR TESTING END************************/
 
     /// Cancels the open order currently in the order book with the matching ID
