@@ -168,6 +168,9 @@ async fn main() {
 
     /* start the web server */
     warp::serve(routes)
+        .tls()
+        .cert_path(arguments.certificate_path)
+        .key_path(arguments.private_key_path)
         .run((arguments.listen_address, arguments.listen_port))
         .await;
 }
