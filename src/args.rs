@@ -20,6 +20,8 @@ pub const DEFAULT_EXECUTIONER: &str = "http://localhost:3000";
 pub const DEFAULT_CERTFILE: &str = "cert.pem";
 pub const DEFAULT_KEYFILE: &str = "pkey.secret";
 
+pub const DEFAULT_TLS_TOGGLE: bool = false;
+
 #[derive(Clone, Debug)]
 pub struct Arguments {
     pub listen_address: IpAddr,
@@ -28,6 +30,7 @@ pub struct Arguments {
     pub dumpfile_path: PathBuf,
     pub certificate_path: PathBuf,
     pub private_key_path: PathBuf,
+    pub force_no_tls: bool,
 }
 
 impl TryFrom<ArgMatches<'_>> for Arguments {
@@ -41,6 +44,7 @@ impl TryFrom<ArgMatches<'_>> for Arguments {
         let mut dumpfile_path: PathBuf = DEFAULT_DUMPFILE.into();
         let mut certificate_path: PathBuf = DEFAULT_CERTFILE.into();
         let mut private_key_path: PathBuf = DEFAULT_KEYFILE.into();
+        let mut force_no_tls: bool = DEFAULT_TLS_TOGGLE;
 
         /* handle listening address */
         if let Some(t) = value.value_of("listen") {
@@ -111,6 +115,16 @@ impl TryFrom<ArgMatches<'_>> for Arguments {
             }
         }
 
+        /* handle TLS toggle */
+        if value.is_present("force_no_tls") {
+            force_no_tls = true;
+        } else {
+            match env::var("OME_FORCE_NO_TLS") {
+                Ok(t) => force_no_tls = t.parse::<bool>().unwrap(),
+                Err(_e) => {}
+            }
+        }
+
         Ok(Self {
             listen_address,
             listen_port,
@@ -118,6 +132,7 @@ impl TryFrom<ArgMatches<'_>> for Arguments {
             dumpfile_path,
             certificate_path,
             private_key_path,
+            force_no_tls,
         })
     }
 }
