@@ -116,7 +116,7 @@ impl TryFrom<ArgMatches<'_>> for Arguments {
         }
 
         /* handle TLS toggle */
-        if value.is_present("force_no_tls") {
+        if value.is_present("force-no-tls") {
             force_no_tls = true;
         } else {
             match env::var("OME_FORCE_NO_TLS") {

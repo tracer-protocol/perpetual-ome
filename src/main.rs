@@ -84,8 +84,8 @@ async fn main() {
                 .takes_value(true),
         )
         .arg(
-            Arg::with_name("force_no_tls")
-                .long("force_no_tls")
+            Arg::with_name("force-no-tls")
+                .long("force-no-tls")
                 .help("Flag to force TLS to be turned off"),
         )
         .get_matches();
