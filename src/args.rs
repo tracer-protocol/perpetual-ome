@@ -17,12 +17,20 @@ pub const DEFAULT_DUMPFILE: &str = ".omedump.json";
 
 pub const DEFAULT_EXECUTIONER: &str = "http://localhost:3000";
 
+pub const DEFAULT_CERTFILE: &str = "cert.pem";
+pub const DEFAULT_KEYFILE: &str = "pkey.secret";
+
+pub const DEFAULT_TLS_TOGGLE: bool = false;
+
 #[derive(Clone, Debug)]
 pub struct Arguments {
     pub listen_address: IpAddr,
     pub listen_port: u16,
     pub executioner_address: String,
     pub dumpfile_path: PathBuf,
+    pub certificate_path: PathBuf,
+    pub private_key_path: PathBuf,
+    pub force_no_tls: bool,
 }
 
 impl TryFrom<ArgMatches<'_>> for Arguments {
@@ -34,6 +42,9 @@ impl TryFrom<ArgMatches<'_>> for Arguments {
         let mut listen_port: u16 = DEFAULT_PORT.parse::<u16>().unwrap();
         let mut executioner_address: String = DEFAULT_EXECUTIONER.to_string();
         let mut dumpfile_path: PathBuf = DEFAULT_DUMPFILE.into();
+        let mut certificate_path: PathBuf = DEFAULT_CERTFILE.into();
+        let mut private_key_path: PathBuf = DEFAULT_KEYFILE.into();
+        let mut force_no_tls: bool = DEFAULT_TLS_TOGGLE;
 
         /* handle listening address */
         if let Some(t) = value.value_of("listen") {
@@ -84,11 +95,44 @@ impl TryFrom<ArgMatches<'_>> for Arguments {
             dumpfile_path = t.into();
         };
 
+        /* handle TLS certificate path */
+        if let Some(t) = value.value_of("certificate_path") {
+            certificate_path = t.into();
+        } else {
+            match env::var("OME_CERTIFICATE_PATH") {
+                Ok(t) => certificate_path = t.into(),
+                Err(_e) => {}
+            }
+        }
+
+        /* handle TLS private key path */
+        if let Some(t) = value.value_of("private_key_path") {
+            private_key_path = t.into();
+        } else {
+            match env::var("OME_PRIVATE_KEY_PATH") {
+                Ok(t) => certificate_path = t.into(),
+                Err(_e) => {}
+            }
+        }
+
+        /* handle TLS toggle */
+        if value.is_present("force-no-tls") {
+            force_no_tls = true;
+        } else {
+            match env::var("OME_FORCE_NO_TLS") {
+                Ok(t) => force_no_tls = t.parse::<bool>().unwrap(),
+                Err(_e) => {}
+            }
+        }
+
         Ok(Self {
             listen_address,
             listen_port,
             executioner_address,
             dumpfile_path,
+            certificate_path,
+            private_key_path,
+            force_no_tls,
         })
     }
 }

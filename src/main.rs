@@ -69,6 +69,25 @@ async fn main() {
                 .help("Address of the Web3 executioner")
                 .takes_value(true),
         )
+        .arg(
+            Arg::with_name("certificate_path")
+                .long("certificate_path")
+                .value_name("certificate_path")
+                .help("File path to the TLS certificate file")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("private_key_path")
+                .long("private_key_path")
+                .value_name("private_key_path")
+                .help("File path to the TLS private key file")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("force-no-tls")
+                .long("force-no-tls")
+                .help("Flag to force TLS to be turned off"),
+        )
         .get_matches();
 
     let arguments: Arguments = match matches.try_into() {
@@ -167,7 +186,16 @@ async fn main() {
     let routes = book_routes.or(order_routes).with(cors);
 
     /* start the web server */
-    warp::serve(routes)
-        .run((arguments.listen_address, arguments.listen_port))
-        .await;
+    if arguments.force_no_tls {
+        warp::serve(routes)
+            .run((arguments.listen_address, arguments.listen_port))
+            .await;
+    } else {
+        warp::serve(routes)
+            .tls()
+            .cert_path(arguments.certificate_path)
+            .key_path(arguments.private_key_path)
+            .run((arguments.listen_address, arguments.listen_port))
+            .await;
+    }
 }
