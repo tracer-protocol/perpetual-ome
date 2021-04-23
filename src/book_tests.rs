@@ -6,7 +6,7 @@ use crate::order::{Order, OrderSide};
 
 pub const TEST_RPC_ADDRESS: &str = "http://localhost:3000";
 
-async fn setup() -> Book {
+fn setup() -> Book {
     let market: Address = Address::zero();
     let mut book = Book::new(market);
 
@@ -67,19 +67,14 @@ async fn setup() -> Book {
     );
 
     book.submit(ask, TEST_RPC_ADDRESS.to_string())
-        .await
         .expect("Error submitting the ask order 1.");
     book.submit(ask1, TEST_RPC_ADDRESS.to_string())
-        .await
         .expect("Error submitting the ask order 2.");
     book.submit(ask2, TEST_RPC_ADDRESS.to_string())
-        .await
         .expect("Error submitting the ask order 3.");
     book.submit(ask3, TEST_RPC_ADDRESS.to_string())
-        .await
         .expect("Error submitting the ask order 4.");
     book.submit(ask4, TEST_RPC_ADDRESS.to_string())
-        .await
         .expect("Error submitting the ask order 5.");
 
     let bid = Order::new(
@@ -138,26 +133,20 @@ async fn setup() -> Book {
     );
 
     book.submit(bid, TEST_RPC_ADDRESS.to_string())
-        .await
         .expect("Error submitting the bid order 1.");
     book.submit(bid1, TEST_RPC_ADDRESS.to_string())
-        .await
         .expect("Error submitting the bid order 2.");
     book.submit(bid2, TEST_RPC_ADDRESS.to_string())
-        .await
         .expect("Error submitting the bid order 3.");
     book.submit(bid3, TEST_RPC_ADDRESS.to_string())
-        .await
         .expect("Error submitting the bid order 4.");
     book.submit(bid4, TEST_RPC_ADDRESS.to_string())
-        .await
         .expect("Error submitting the bid order 5.");
 
     book
 }
 
-#[tokio::test]
-pub async fn test_new_book() {
+pub fn test_new_book() {
     let market: Address = Address::zero();
     let book = Book::new(market);
 
@@ -165,9 +154,8 @@ pub async fn test_new_book() {
     assert_eq!(book.depth(), (0, 0)); // Asserts that there are no orders in the book.
 }
 
-#[tokio::test]
-pub async fn test_book_depth() {
-    let book = setup().await;
+pub fn test_book_depth() {
+    let book = setup();
 
     let (bid_length, ask_length) = book.depth();
 
@@ -175,9 +163,8 @@ pub async fn test_book_depth() {
     assert_eq!(ask_length, 5);
 }
 
-#[tokio::test]
-pub async fn test_simple_buy() {
-    let mut book = setup().await;
+pub fn test_simple_buy() {
+    let mut book = setup();
     let bid = Order::new(
         Address::from_low_u64_be(3),
         Address::zero(),
@@ -190,7 +177,7 @@ pub async fn test_simple_buy() {
     );
 
     let submit_res: Result<(), BookError> =
-        book.submit(bid, TEST_RPC_ADDRESS.to_string()).await;
+        book.submit(bid, TEST_RPC_ADDRESS.to_string());
 
     let (bid_length, ask_length) = book.depth();
 
@@ -202,9 +189,8 @@ pub async fn test_simple_buy() {
     assert_eq!(ask_length, 4);
 }
 
-#[tokio::test]
-pub async fn test_simple_buy_partially_filled() {
-    let mut book = setup().await;
+pub fn test_simple_buy_partially_filled() {
+    let mut book = setup();
 
     let market_address = Address::zero();
     let bid = Order::new(
@@ -219,7 +205,7 @@ pub async fn test_simple_buy_partially_filled() {
     );
 
     let submit_res: Result<(), BookError> =
-        book.submit(bid, TEST_RPC_ADDRESS.to_string()).await;
+        book.submit(bid, TEST_RPC_ADDRESS.to_string());
 
     let (bid_length, ask_length) = book.depth();
 
@@ -232,9 +218,8 @@ pub async fn test_simple_buy_partially_filled() {
     assert_eq!(ask_length, 5);
 }
 
-#[tokio::test]
-pub async fn test_simple_sell() {
-    let mut book = setup().await;
+pub fn test_simple_sell() {
+    let mut book = setup();
     let ask = Order::new(
         Address::from_low_u64_be(3),
         Address::zero(),
@@ -247,7 +232,7 @@ pub async fn test_simple_sell() {
     );
 
     let submit_res: Result<(), BookError> =
-        book.submit(ask, TEST_RPC_ADDRESS.to_string()).await;
+        book.submit(ask, TEST_RPC_ADDRESS.to_string());
 
     let (bid_length, ask_length) = book.depth();
 
@@ -259,9 +244,8 @@ pub async fn test_simple_sell() {
     assert_eq!(ask_length, 5);
 }
 
-#[tokio::test]
-pub async fn test_simple_sell_partially_filled() {
-    let mut book = setup().await;
+pub fn test_simple_sell_partially_filled() {
+    let mut book = setup();
 
     let market_address = Address::zero();
     let bid = Order::new(
@@ -276,7 +260,7 @@ pub async fn test_simple_sell_partially_filled() {
     );
 
     let submit_res: Result<(), BookError> =
-        book.submit(bid, TEST_RPC_ADDRESS.to_string()).await;
+        book.submit(bid, TEST_RPC_ADDRESS.to_string());
 
     let (bid_length, ask_length) = book.depth();
 
@@ -289,9 +273,8 @@ pub async fn test_simple_sell_partially_filled() {
     assert_eq!(ask_length, 5);
 }
 
-#[tokio::test]
-pub async fn test_deep_buy() {
-    let mut book = setup().await;
+pub fn test_deep_buy() {
+    let mut book = setup();
     let market_address = Address::zero();
     let bid = Order::new(
         Address::from_low_u64_be(3),
@@ -305,7 +288,7 @@ pub async fn test_deep_buy() {
     );
 
     let submit_res: Result<(), BookError> =
-        book.submit(bid, TEST_RPC_ADDRESS.to_string()).await;
+        book.submit(bid, TEST_RPC_ADDRESS.to_string());
 
     let (bid_length, ask_length) = book.depth();
 
@@ -318,9 +301,8 @@ pub async fn test_deep_buy() {
     assert_eq!(ask_length, 3);
 }
 
-#[tokio::test]
-pub async fn test_deep_buy_with_limit() {
-    let mut book = setup().await;
+pub fn test_deep_buy_with_limit() {
+    let mut book = setup();
     let market_address = Address::zero();
     let bid = Order::new(
         Address::from_low_u64_be(3),
@@ -334,7 +316,7 @@ pub async fn test_deep_buy_with_limit() {
     );
 
     let submit_res: Result<(), BookError> =
-        book.submit(bid, TEST_RPC_ADDRESS.to_string()).await;
+        book.submit(bid, TEST_RPC_ADDRESS.to_string());
 
     let (bid_length, ask_length) = book.depth();
 
@@ -346,9 +328,8 @@ pub async fn test_deep_buy_with_limit() {
     assert_eq!(ask_length, 3);
 }
 
-#[tokio::test]
-pub async fn test_deep_sell() {
-    let mut book = setup().await;
+pub fn test_deep_sell() {
+    let mut book = setup();
     let market_address = Address::zero();
     let ask = Order::new(
         Address::from_low_u64_be(10),
@@ -362,7 +343,7 @@ pub async fn test_deep_sell() {
     );
 
     let submit_res: Result<(), BookError> =
-        book.submit(ask, TEST_RPC_ADDRESS.to_string()).await;
+        book.submit(ask, TEST_RPC_ADDRESS.to_string());
 
     let (bid_length, ask_length) = book.depth();
 
@@ -375,9 +356,8 @@ pub async fn test_deep_sell() {
     assert_eq!(ask_length, 5);
 }
 
-#[tokio::test]
-pub async fn test_deep_sell_with_limit() {
-    let mut book = setup().await;
+pub fn test_deep_sell_with_limit() {
+    let mut book = setup();
     let market_address = Address::zero();
     let ask = Order::new(
         Address::from_low_u64_be(33),
@@ -391,7 +371,7 @@ pub async fn test_deep_sell_with_limit() {
     );
 
     let submit_res: Result<(), BookError> =
-        book.submit(ask, TEST_RPC_ADDRESS.to_string()).await;
+        book.submit(ask, TEST_RPC_ADDRESS.to_string());
 
     let (bid_length, ask_length) = book.depth();
 

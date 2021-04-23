@@ -165,7 +165,7 @@ pub async fn create_order_handler(
     let tmp_order: Order = new_order.clone();
 
     /* submit order to the engine for matching */
-    match book.submit(new_order, rpc_endpoint).await {
+    match book.submit(new_order, rpc_endpoint) {
         Ok(_) => {
             info!("Created order {}", tmp_order);
             Ok(warp::reply::with_status("", http::StatusCode::OK))

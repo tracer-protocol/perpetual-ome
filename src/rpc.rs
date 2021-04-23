@@ -1,7 +1,8 @@
 use std::fmt::Display;
 use std::str::FromStr;
 
-use reqwest::{header, Client, Response};
+use reqwest::blocking::{Client, Response};
+use reqwest::header;
 use serde::{Deserialize, Serialize};
 use web3::types::H160;
 
@@ -32,7 +33,7 @@ pub struct MatchRequest {
     taker: Order,
 }
 
-pub async fn send_matched_orders(
+pub fn send_matched_orders(
     maker: Order,
     taker: Order,
     address: String,
@@ -47,14 +48,13 @@ pub async fn send_matched_orders(
         .header(header::CONTENT_TYPE, "application/json")
         .body(serde_json::to_string(&payload).unwrap())
         .send()
-        .await
     {
         Ok(t) => t,
         Err(e) => return Err(RpcError::from(e)),
     };
 
     /* extract the transaction hash from the response body */
-    let hash: H160 = match result.text().await {
+    let hash: H160 = match result.text() {
         Ok(t) => match H160::from_str(&t) {
             Ok(s) => s,
             Err(l) => {

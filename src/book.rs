@@ -145,7 +145,7 @@ impl Book {
     ///
     /// In the event the order cannot be (fully) matched, it will be stored
     /// in the order book for future matching.
-    pub async fn submit(
+    pub fn submit(
         &mut self,
         mut order: Order,
         executioner_address: String,
@@ -207,9 +207,7 @@ impl Book {
                     order.clone(),
                     match_to_submit,
                     executioner_address.clone(),
-                )
-                .await
-                {
+                ) {
                     Ok(t) => {
                         info!("See https://etherscan.io/tx/{}", t);
                     }
