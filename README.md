@@ -17,7 +17,7 @@ Follow the above steps to install all the required dependencies.
 To set the debugging level, use
 `export RUST_LOG=info`
 To run the OME, with the executioner running locally, use
-`cargo run -- --executioner_address "http://localhost:3000"`
+`cargo run -- --executioner_address "http://localhost:3000" --force-no-tls`
 
 ## Common Issues
 
