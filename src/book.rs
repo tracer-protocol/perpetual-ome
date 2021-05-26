@@ -20,8 +20,8 @@ use crate::util::{from_hex_de, from_hex_se};
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct Book {
     market: Address, /* the address of the Tracer market */
-    bids: BTreeMap<U256, VecDeque<Order>>, /* buy-side */
-    asks: BTreeMap<U256, VecDeque<Order>>, /* sell-side */
+    pub bids: BTreeMap<U256, VecDeque<Order>>, /* buy-side */
+    pub asks: BTreeMap<U256, VecDeque<Order>>, /* sell-side */
     #[serde(
         serialize_with = "from_hex_se",
         deserialize_with = "from_hex_de",
