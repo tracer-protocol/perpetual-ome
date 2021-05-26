@@ -124,6 +124,8 @@ async fn main() {
     let update_order_state: Arc<Mutex<OmeState>> = state.clone();
     let destroy_order_state: Arc<Mutex<OmeState>> = state.clone();
 
+    let market_user_orders_state: Arc<Mutex<OmeState>> = state.clone();
+
     /* define CRUD routes for order books */
     let book_prefix = warp::path!("book");
     let index_book_route = book_prefix
@@ -162,6 +164,11 @@ async fn main() {
         .and(warp::any().map(move || destroy_order_state.clone()))
         .and_then(handler::destroy_order_handler);
 
+    let market_user_orders_route = warp::path!("book" / Address / Address)
+        .and(warp::get())
+        .and(warp::any().map(move || market_user_orders_state.clone()))
+        .and_then(handler::market_user_orders_handler);
+
     /* aggregate all of our order book routes */
     let book_routes =
         index_book_route.or(create_book_route).or(read_book_route);
@@ -171,6 +178,8 @@ async fn main() {
         .or(read_order_route)
         .or(update_order_route)
         .or(destroy_order_route);
+
+    let misc_routes = market_user_orders_route;
 
     let cors = warp::cors()
         .allow_any_origin()
@@ -183,7 +192,7 @@ async fn main() {
         .allow_methods(vec!["GET", "POST", "PUT", "DELETE"]);
 
     /* aggregate all of our routes */
-    let routes = book_routes.or(order_routes).with(cors);
+    let routes = book_routes.or(order_routes).or(misc_routes).with(cors);
 
     /* start the web server */
     if arguments.force_no_tls {
