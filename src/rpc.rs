@@ -38,11 +38,9 @@ pub async fn send_matched_orders(
     address: String,
 ) -> Result<H160, RpcError> {
     let payload: MatchRequest = MatchRequest { maker, taker };
-    dbg!("Hello world client");
     let client: Client = Client::new();
 
     /* post the matched orders to the forwarder */
-    dbg!("Hello world 1");
     let result: Response = match client
         .post(&address)
         .header(header::CONTENT_TYPE, "application/json")
@@ -52,12 +50,10 @@ pub async fn send_matched_orders(
     {
         Ok(t) => t,
         Err(e) => {
-            dbg!("ERR");
             return Err(RpcError::from(e));
         }
     };
 
-    dbg!("Hello world 2");
     /* extract the transaction hash from the response body */
     let hash: H160 = match result.text().await {
         Ok(t) => match H160::from_str(&t) {
