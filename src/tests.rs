@@ -11,7 +11,6 @@ mod order_tests {
         let market_address = Address::zero();
         let price = U256::from_dec_str(&"5").unwrap();
         let amount = U256::from_dec_str(&"10").unwrap();
-        let nonce = U256::from_dec_str(&"32").unwrap();
 
         let order = Order::new(
             address,
@@ -21,7 +20,6 @@ mod order_tests {
             amount,
             Utc::now(),
             vec![],
-            nonce,
         );
 
         assert_eq!(order.user, address);
@@ -29,7 +27,6 @@ mod order_tests {
         assert_eq!(order.side, OrderSide::Bid);
         assert_eq!(order.price, price);
         assert_eq!(order.amount, amount);
-        assert_eq!(order.nonce, nonce);
         assert!(order.signed_data.is_empty());
     }
 }

@@ -35,7 +35,6 @@ pub struct CreateOrderRequest {
     #[serde(with = "ts_seconds")]
     expiration: DateTime<Utc>, /* expiration of the order */
     signed_data: Vec<u8>,   /* digital signature of the order */
-    nonce: U256,            /* order nonce */
 }
 
 impl From<CreateOrderRequest> for Order {
@@ -48,7 +47,6 @@ impl From<CreateOrderRequest> for Order {
         let amount: U256 = value.amount;
         let expiration: DateTime<Utc> = value.expiration;
         let signed_data: Vec<u8> = value.signed_data;
-        let nonce: U256 = value.nonce;
 
         /* construct order */
         Order::new(
@@ -59,7 +57,6 @@ impl From<CreateOrderRequest> for Order {
             amount,
             expiration,
             signed_data,
-            nonce,
         )
     }
 }
