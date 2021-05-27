@@ -11,7 +11,7 @@ use web3::types::{Address, U256};
 use crate::util::{from_hex_de, from_hex_se};
 
 /// Magic string representing the function signature
-pub const FUNCTION_SIGNATURE: &str = "LimitOrder(uint256 amount,uint256 price,bool side,address user,uint256 expiration,address target_tracer,uint256 nonce)";
+pub const FUNCTION_SIGNATURE: &str = "LimitOrder(uint256 amount,uint256 price,bool side,address user,uint256 expiration,address target_tracer)";
 
 /// Magic pre-computed hash of the EIP712 domain prefix
 pub const DOMAIN_HASH: &str =
@@ -64,7 +64,6 @@ pub struct Order {
     #[serde(with = "ts_seconds")]
     pub expiration: DateTime<Utc>, /* expiration of the order */
     pub signed_data: Vec<u8>,   /* digital signature of the order */
-    pub nonce: U256,            /* order nonce */
 }
 
 impl fmt::Display for Order {
@@ -95,7 +94,6 @@ impl Order {
         amount: U256,
         expiration: DateTime<Utc>,
         signed_data: Vec<u8>,
-        nonce: U256,
     ) -> Self {
         let id: OrderId = 0; /* TODO: determine how IDs are to be generated */
 
@@ -108,7 +106,6 @@ impl Order {
             amount,
             expiration,
             signed_data,
-            nonce,
         }
     }
 
@@ -145,10 +142,5 @@ impl Order {
     /// Returns a mutable reference to the expiration of this order
     pub fn expiration_mut(&mut self) -> &mut DateTime<Utc> {
         &mut self.expiration
-    }
-
-    /// Returns a mutable reference to the order's nonce
-    pub fn nonce_mut(&mut self) -> &mut U256 {
-        &mut self.nonce
     }
 }

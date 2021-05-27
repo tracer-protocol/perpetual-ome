@@ -19,7 +19,6 @@ async fn setup() -> Book {
         U256::from_dec_str(&"10").unwrap(),
         Utc::now(),
         vec![],
-        U256::from_dec_str(&"18").unwrap(),
     );
 
     let ask1 = Order::new(
@@ -30,7 +29,6 @@ async fn setup() -> Book {
         U256::from_dec_str(&"2").unwrap(),
         Utc::now(),
         vec![],
-        U256::from_dec_str(&"19").unwrap(),
     );
 
     let ask2 = Order::new(
@@ -41,7 +39,6 @@ async fn setup() -> Book {
         U256::from_dec_str(&"35").unwrap(),
         Utc::now(),
         vec![],
-        U256::from_dec_str(&"20").unwrap(),
     );
 
     let ask3 = Order::new(
@@ -52,7 +49,6 @@ async fn setup() -> Book {
         U256::from_dec_str(&"15").unwrap(),
         Utc::now(),
         vec![],
-        U256::from_dec_str(&"21").unwrap(),
     );
 
     let ask4 = Order::new(
@@ -63,7 +59,6 @@ async fn setup() -> Book {
         U256::from_dec_str(&"5").unwrap(),
         Utc::now(),
         vec![],
-        U256::from_dec_str(&"22").unwrap(),
     );
 
     book.submit(ask, TEST_RPC_ADDRESS.to_string())
@@ -90,7 +85,6 @@ async fn setup() -> Book {
         U256::from_dec_str(&"10").unwrap(),
         Utc::now(),
         vec![],
-        U256::from_dec_str(&"1").unwrap(),
     );
 
     let bid1 = Order::new(
@@ -101,7 +95,6 @@ async fn setup() -> Book {
         U256::from_dec_str(&"20").unwrap(),
         Utc::now(),
         vec![],
-        U256::from_dec_str(&"2").unwrap(),
     );
 
     let bid2 = Order::new(
@@ -112,7 +105,6 @@ async fn setup() -> Book {
         U256::from_dec_str(&"5").unwrap(),
         Utc::now(),
         vec![],
-        U256::from_dec_str(&"3").unwrap(),
     );
 
     let bid3 = Order::new(
@@ -123,7 +115,6 @@ async fn setup() -> Book {
         U256::from_dec_str(&"10").unwrap(),
         Utc::now(),
         vec![],
-        U256::from_dec_str(&"4").unwrap(),
     );
 
     let bid4 = Order::new(
@@ -134,7 +125,6 @@ async fn setup() -> Book {
         U256::from_dec_str(&"15").unwrap(),
         Utc::now(),
         vec![],
-        U256::from_dec_str(&"4").unwrap(),
     );
 
     book.submit(bid, TEST_RPC_ADDRESS.to_string())
@@ -186,7 +176,6 @@ pub async fn test_simple_buy() {
         U256::from_dec_str(&"5").unwrap(),
         Utc::now(),
         vec![],
-        U256::from_dec_str(&"23").unwrap(),
     );
 
     let submit_res: Result<(), BookError> =
@@ -215,7 +204,6 @@ pub async fn test_simple_buy_partially_filled() {
         U256::from_dec_str(&"3").unwrap(),
         Utc::now(),
         vec![],
-        U256::from_dec_str(&"22").unwrap(),
     );
 
     let submit_res: Result<(), BookError> =
@@ -243,7 +231,6 @@ pub async fn test_simple_sell() {
         U256::from_dec_str(&"10").unwrap(),
         Utc::now(),
         vec![],
-        U256::from_dec_str(&"23").unwrap(),
     );
 
     let submit_res: Result<(), BookError> =
@@ -272,7 +259,6 @@ pub async fn test_simple_sell_partially_filled() {
         U256::from_dec_str(&"1").unwrap(),
         Utc::now(),
         vec![],
-        U256::from_dec_str(&"22").unwrap(),
     );
 
     let submit_res: Result<(), BookError> =
@@ -301,7 +287,6 @@ pub async fn test_deep_buy() {
         U256::from_dec_str(&"42").unwrap(),
         Utc::now(),
         vec![],
-        U256::from_dec_str(&"35").unwrap(),
     );
 
     let submit_res: Result<(), BookError> =
@@ -330,7 +315,6 @@ pub async fn test_deep_buy_with_limit() {
         U256::from_dec_str(&"42").unwrap(),
         Utc::now(),
         vec![],
-        U256::from_dec_str(&"30").unwrap(),
     );
 
     let submit_res: Result<(), BookError> =
@@ -358,7 +342,6 @@ pub async fn test_deep_sell() {
         U256::from_dec_str(&"20").unwrap(),
         Utc::now(),
         vec![],
-        U256::from_dec_str(&"34").unwrap(),
     );
 
     let submit_res: Result<(), BookError> =
@@ -387,7 +370,6 @@ pub async fn test_deep_sell_with_limit() {
         U256::from_dec_str(&"35").unwrap(),
         Utc::now(),
         vec![],
-        U256::from_dec_str(&"34").unwrap(),
     );
 
     let submit_res: Result<(), BookError> =

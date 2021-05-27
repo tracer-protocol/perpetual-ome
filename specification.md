@@ -76,7 +76,6 @@ The `Order` type represents an order in a Tracer market.
 | Amount | 256-bit unsigned integer | The quantity of the order |
 | Expiration | Timestamp | The time at which the order will cease being valid |
 | signedData | 65-byte-long EIP-712 signature | An EIP-712 compliant digital signature for the order |
-| Nonce | 256-bit unsigned integer | Nonce for this order |
 
 #### Domain ####
 

@@ -38,7 +38,6 @@ pub async fn send_matched_orders(
     address: String,
 ) -> Result<H160, RpcError> {
     let payload: MatchRequest = MatchRequest { maker, taker };
-
     let client: Client = Client::new();
 
     /* post the matched orders to the forwarder */
@@ -50,7 +49,9 @@ pub async fn send_matched_orders(
         .await
     {
         Ok(t) => t,
-        Err(e) => return Err(RpcError::from(e)),
+        Err(e) => {
+            return Err(RpcError::from(e));
+        }
     };
 
     /* extract the transaction hash from the response body */
