@@ -51,10 +51,10 @@ pub async fn send_matched_orders(
         .await
     {
         Ok(t) => t,
-        Err(e) => { 
+        Err(e) => {
             dbg!("ERR");
-            return Err(RpcError::from(e)); 
-        },
+            return Err(RpcError::from(e));
+        }
     };
 
     dbg!("Hello world 2");

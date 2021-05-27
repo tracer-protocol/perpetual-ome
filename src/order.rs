@@ -63,7 +63,7 @@ pub struct Order {
     pub amount: U256, /* quantity */
     #[serde(with = "ts_seconds")]
     pub expiration: DateTime<Utc>, /* expiration of the order */
-    pub signed_data: Vec<u8>   /* digital signature of the order */
+    pub signed_data: Vec<u8>,   /* digital signature of the order */
 }
 
 impl fmt::Display for Order {
