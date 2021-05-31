@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tracer-ome
+  labels:
+    app: tracer-ome
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tracer-ome
+  template:
+    metadata:
+      labels:
+        app: tracer-ome
+    spec:
+      containers:
+      - name: tracer-ome
+        image: gcr.io/tracer-protocol-testing/ome:latest
+        envFrom:
+        - configMapRef:
+            name: ome-env
+        ports:
+        - containerPort: 8989
+      
