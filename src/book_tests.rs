@@ -250,6 +250,45 @@ pub async fn test_no_self_matching() {
 }
 
 #[tokio::test]
+pub async fn test_no_self_matching_when_last_order() {
+    let market: Address = Address::zero();
+    let mut book = Book::new(market);
+
+    let ask: Order = Order::new(
+        Address::from_low_u64_be(1),
+        market,
+        OrderSide::Ask,
+        97.into(),
+        15.into(),
+        Utc::now(),
+        vec![],
+    );
+
+    let bid: Order = Order::new(
+        Address::from_low_u64_be(1), /* previously placed a ask */
+        market,
+        OrderSide::Bid,
+        97.into(),
+        15.into(),
+        Utc::now(),
+        vec![],
+    );
+
+    book.submit(ask, TEST_RPC_ADDRESS.to_string())
+        .await
+        .unwrap();
+
+    let actual_res: Result<(), BookError> =
+        book.submit(bid, TEST_RPC_ADDRESS.to_string()).await;
+
+    let (bid_depth, ask_depth) = book.depth();
+
+    assert_eq!(actual_res, Ok(()));
+    assert_eq!(bid_depth, 1);
+    assert_eq!(ask_depth, 1);
+}
+
+#[tokio::test]
 pub async fn test_deep_buy_with_limit() {
     let mut book = setup().await;
     let market_address = Address::zero();
