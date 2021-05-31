@@ -54,11 +54,11 @@ async fn setup() -> Book {
     ];
 
     let bids: Vec<(Address, OrderSide, u64, u64)> = vec![
-        (traders[0], OrderSide::Bid, 95, 10),
-        (traders[1], OrderSide::Bid, 94, 20),
-        (traders[2], OrderSide::Bid, 93, 5),
-        (traders[3], OrderSide::Bid, 92, 10),
-        (traders[4], OrderSide::Bid, 91, 15),
+        (traders[5], OrderSide::Bid, 95, 10),
+        (traders[6], OrderSide::Bid, 94, 20),
+        (traders[7], OrderSide::Bid, 93, 5),
+        (traders[8], OrderSide::Bid, 92, 10),
+        (traders[9], OrderSide::Bid, 91, 15),
     ];
 
     let orders: Vec<(Address, OrderSide, u64, u64)> =
@@ -201,7 +201,7 @@ pub async fn test_deep_buy() {
     let mut book = setup().await;
     let market_address = Address::zero();
     let bid = Order::new(
-        Address::from_low_u64_be(3),
+        Address::from_low_u64_be(10),
         market_address,
         OrderSide::Bid,
         U256::from_dec_str(&"99").unwrap(),
@@ -225,11 +225,36 @@ pub async fn test_deep_buy() {
 }
 
 #[tokio::test]
+pub async fn test_no_self_matching() {
+    let mut book = setup().await;
+    let market: Address = Address::zero();
+
+    let bid: Order = Order::new(
+        Address::from_low_u64_be(1), /* previously placed a ask */
+        market,
+        OrderSide::Bid,
+        97.into(),
+        15.into(),
+        Utc::now(),
+        vec![],
+    );
+
+    let actual_res: Result<(), BookError> =
+        book.submit(bid, TEST_RPC_ADDRESS.to_string()).await;
+
+    let (bid_depth, ask_depth) = book.depth();
+
+    assert_eq!(actual_res, Ok(()));
+    assert_eq!(bid_depth, 5);
+    assert_eq!(ask_depth, 4);
+}
+
+#[tokio::test]
 pub async fn test_deep_buy_with_limit() {
     let mut book = setup().await;
     let market_address = Address::zero();
     let bid = Order::new(
-        Address::from_low_u64_be(3),
+        Address::from_low_u64_be(10),
         market_address,
         OrderSide::Bid,
         U256::from_dec_str(&"97").unwrap(),
