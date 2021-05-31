@@ -189,6 +189,17 @@ impl Book {
 
         // match until either the order is fully matched, or all valid orders to match with are done.
         while !done {
+            /* prevent self-matching */
+            if orders_queue.front().is_some()
+                && orders_queue.front().unwrap().user == order.user
+            {
+                if orders_queue.len() > 1 {
+                    continue;
+                } else {
+                    break;
+                }
+            }
+
             // iterate over orders at the current "best" price
             while let Some(mut matching_order) = orders_queue.pop_front() {
                 // compute new amounts for our orders using temp variables

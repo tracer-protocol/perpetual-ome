@@ -1,4 +1,5 @@
 #![feature(map_first_last)]
+#![feature(async_closure)]
 #![feature(result_contains_err)]
 #![feature(destructuring_assignment)]
 use std::convert::TryInto;
