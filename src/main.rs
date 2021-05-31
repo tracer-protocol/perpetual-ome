@@ -169,6 +169,11 @@ async fn main() {
         .and(warp::any().map(move || market_user_orders_state.clone()))
         .and_then(handler::market_user_orders_handler);
 
+    // Healthcheck
+    let health_route = warp::path::end()
+        .and(warp::get())
+        .and_then(handler::health_check_handler);
+
     /* aggregate all of our order book routes */
     let book_routes =
         index_book_route.or(create_book_route).or(read_book_route);
@@ -192,7 +197,7 @@ async fn main() {
         .allow_methods(vec!["GET", "POST", "PUT", "DELETE"]);
 
     /* aggregate all of our routes */
-    let routes = book_routes.or(order_routes).or(misc_routes).with(cors);
+    let routes = health_route.or(book_routes).or(order_routes).or(misc_routes).with(cors);
 
     /* start the web server */
     if arguments.force_no_tls {
