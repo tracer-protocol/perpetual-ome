@@ -3,7 +3,9 @@ kind: Ingress
 metadata:
   name: tracer-ome-ingress
   annotations:
-    # If the class annotation is not specified it defaults to "gce".
+    # SSL support for ingress
+    kubernetes.io/ingress.global-static-ip-name: ome-ingress-ip
+    networking.gke.io/managed-certificates: ome-cert
     kubernetes.io/ingress.class: "gce"
 spec:
   rules:
