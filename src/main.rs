@@ -198,7 +198,11 @@ async fn main() {
         .allow_methods(vec!["GET", "POST", "PUT", "DELETE"]);
 
     /* aggregate all of our routes */
-    let routes = health_route.or(book_routes).or(order_routes).or(misc_routes).with(cors);
+    let routes = health_route
+        .or(book_routes)
+        .or(order_routes)
+        .or(misc_routes)
+        .with(cors);
 
     /* start the web server */
     if arguments.force_no_tls {
