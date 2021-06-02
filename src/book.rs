@@ -233,6 +233,12 @@ impl Book {
                         order = Book::fill(order, amount);
                         *ask = Book::fill(ask.clone(), amount);
 
+                        rpc::send_matched_orders(
+                            order.clone(),
+                            ask.clone(),
+                            executioner_address.clone(),
+                        ).await;
+
                         if ask.amount.is_zero() { /* TODO: delete ask order */ }
 
                         running_total -= amount;
@@ -275,6 +281,12 @@ impl Book {
 
                         order = Book::fill(order, amount);
                         *bid = Book::fill(bid.clone(), amount);
+
+                        rpc::send_matched_orders(
+                            order.clone(),
+                            bid.clone(),
+                            executioner_address.clone(),
+                        ).await;
 
                         running_total -= amount;
 
