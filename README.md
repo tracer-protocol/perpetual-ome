@@ -19,32 +19,16 @@ To set the debugging level, use
 To run the OME, with the executioner running locally, use
 `cargo run -- --executioner_address "http://localhost:3000" --force-no-tls`
 
-## Common Issues
-
-
-### The SSL certificate is invalid; class=Ssl (16); code=Certificate (-17)
-Operating system - Ubuntu 18.04
-Author - Dospore
-
-#### Fix
-export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
-
-
-### `#![feature]` may not be used on the stable release channel
-Operating system - Ubuntu 18.04
-Author - Dospore
-
-#### Explanation
-Since we are using some experimental apis we need to tell rustc to use the unstable toolchain.
-Some helpful links
-- [Switching betwwen toolchains](https://stackoverflow.com/questions/58226545/how-to-switch-between-rust-toolchains)
-- [Rust toolchains](https://doc.rust-lang.org/book/appendix-07-nightly-rust.html)
-
-#### Fix
-Create a rust-toolchain file in the root of your project with your desired toolchain as per [Switching betwwen toolchains](https://stackoverflow.com/questions/58226545/how-to-switch-between-rust-toolchains)
+## ENV Variables
+The OME supports the following ENV variables
+- executioner_address: The IP address of the executioner instance
+- port: The listening port of the OME
+- address: The listening address of the OME
+- dumpfile: The filepath to dump all orders on shutdown
 
 ## Deployment
-To deploy changes to GCP, use the following. Note tthat currently the executioner endpoint is defined in the Dockerfile. Ensure this endpoint is correctly set before building and pushing to GCP.
+To deploy changes to GCP, use the following.
+
 ### Build and tag the image
 `docker build . -t gcr.io/tracer-protocol-testing/ome`
 
