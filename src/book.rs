@@ -223,8 +223,7 @@ impl Book {
                         }
 
                         /* determine how much to match */
-                        let amount: U256 = match ask.amount.cmp(&running_total)
-                        {
+                        let amount: U256 = match ask.amount.cmp(&order.amount) {
                             Ordering::Greater => order.amount,
                             _ => ask.amount,
                         };
@@ -274,8 +273,7 @@ impl Book {
                         if bid.user == order.user {
                             continue;
                         }
-                        let amount: U256 = match bid.amount.cmp(&running_total)
-                        {
+                        let amount: U256 = match bid.amount.cmp(&order.amount) {
                             Ordering::Greater => order.amount,
                             _ => bid.amount,
                         };
