@@ -1,7 +1,7 @@
 //! Contains logic and type definitions for the order book itself and the
 //! matching engine also
 use std::{
-    cell::RefCell,
+    cmp::Ordering,
     collections::{BTreeMap, VecDeque},
     fmt::Display,
 };
@@ -128,7 +128,22 @@ impl Book {
 
     /// Returns a pair (2-tuple) containing the depths of each side of the book
     pub fn depth(&self) -> (usize, usize) {
-        (self.bids.len(), self.asks.len())
+        (
+            self.bids
+                .values()
+                .flatten()
+                .filter(|order| !order.amount.is_zero())
+                .cloned()
+                .collect::<Vec<Order>>()
+                .len(),
+            self.asks
+                .values()
+                .flatten()
+                .filter(|order| !order.amount.is_zero())
+                .cloned()
+                .collect::<Vec<Order>>()
+                .len(),
+        )
     }
 
     /// Returns whether the order book is currently crossed or not
@@ -139,6 +154,36 @@ impl Book {
     /// Returns the bid-ask spread of the book
     pub fn spread(&self) -> U256 {
         self.spread
+    }
+
+    pub fn top(&self) -> (Option<U256>, Option<U256>) {
+        let best_bid: Option<U256> = match self.bids.last_key_value() {
+            Some(t) => Some(*t.0),
+            None => None,
+        };
+
+        let best_ask: Option<U256> = match self.asks.first_key_value() {
+            Some(t) => Some(*t.0),
+            None => None,
+        };
+
+        (best_bid, best_ask)
+    }
+
+    fn fill(order: Order, amount: U256) -> Order {
+        match amount.cmp(&order.amount) {
+            Ordering::Greater => order,
+            _ => Order {
+                id: order.id,
+                user: order.user,
+                target_tracer: order.target_tracer,
+                side: order.side,
+                price: order.price,
+                amount: order.amount - amount,
+                expiration: order.expiration,
+                signed_data: order.signed_data,
+            },
+        }
     }
 
     /// Submits an order to the matching engine
@@ -152,160 +197,98 @@ impl Book {
     ) -> Result<(), BookError> {
         info!("Received {}", order);
 
-        // load in book state
-        let order_side = order.side;
-        let order_price = order.price;
-        let mut order_amount = order.amount;
-        let bid_list = RefCell::new(&mut self.bids);
-        let ask_list = RefCell::new(&mut self.asks);
+        let mut running_total: U256 = order.amount;
+        let mut done: bool = false;
 
-        // get the best price and orders at this price
-        let mut opposite = match order_side {
+        match order.side {
             OrderSide::Bid => {
-                let lowest_price_ask = ask_list.borrow_mut().pop_first();
-                lowest_price_ask
+                let opposing_top: Option<U256> = self.top().1;
+
+                /* if we haven't crossed the spread, we're not going to match */
+                if opposing_top.is_none() || opposing_top.unwrap() > order.price
+                {
+                    return self.add_order(order);
+                }
+
+                for (price, asks) in self.asks.iter_mut() {
+                    /* if we've run out of viable prices or we're done, halt */
+                    if done || *price > order.price {
+                        break;
+                    }
+
+                    for ask in asks {
+                        /* no self-trading allowed */
+                        if ask.user == order.user {
+                            continue;
+                        }
+
+                        /* determine how much to match */
+                        let amount: U256 = match ask.amount.cmp(&running_total)
+                        {
+                            Ordering::Greater => order.amount,
+                            _ => ask.amount,
+                        };
+
+                        /* match */
+                        order = Book::fill(order, amount);
+                        *ask = Book::fill(ask.clone(), amount);
+
+                        if ask.amount.is_zero() { /* TODO: delete ask order */ }
+
+                        running_total -= amount;
+
+                        /* check if we've totally matched our incoming order */
+                        if running_total.is_zero() {
+                            done = true;
+                            break;
+                        }
+                    }
+                }
+
+                /* if our incoming order has any volume left, add it to the book */
+                if running_total > U256::zero() {
+                    return self.add_order(order);
+                }
             }
             OrderSide::Ask => {
-                let highest_price_bid = bid_list.borrow_mut().pop_last();
-                highest_price_bid
-            }
-        };
+                let opposing_top: Option<U256> = self.top().0;
 
-        // no orders available to match, place order on the books
-        if opposite.is_none() {
-            // Nothing on the opposite side.
-            info!("Adding {} due to lack of counterparty volume", order);
-            return self.add_order(order); // Store the order and we are done.
-        }
-
-        let (mut price, mut orders_queue) = opposite.unwrap();
-
-        // done if the price crosses. Changes if the order is a bid or ask
-        let mut done = if order_side == OrderSide::Bid {
-            order_price < price
-        } else {
-            order_price > price
-        };
-
-        // match until either the order is fully matched, or all valid orders to match with are done.
-        while !done {
-            /* prevent self-matching */
-            if orders_queue.front().is_some()
-                && orders_queue.front().unwrap().user == order.user
-            {
-                if orders_queue.len() > 1 {
-                    continue;
-                } else {
-                    break;
-                }
-            }
-
-            // iterate over orders at the current "best" price
-            while let Some(mut matching_order) = orders_queue.pop_front() {
-                // compute new amounts for our orders using temp variables
-                let match_to_submit = matching_order.clone();
-                let mut matching_amount = matching_order.amount;
-                matching_order.amount =
-                    matching_amount.saturating_sub(order_amount);
-                order_amount = order_amount.saturating_sub(matching_amount);
-                matching_amount = matching_order.amount;
-
-                // forward to the contracts
-                info!("Forwarding ({},{})", order, match_to_submit);
-
-                /* push to contract */
-                match rpc::send_matched_orders(
-                    order.clone(),
-                    match_to_submit,
-                    executioner_address.clone(),
-                )
-                .await
+                if opposing_top.is_none() || opposing_top.unwrap() < order.price
                 {
-                    Ok(t) => {
-                        info!("See https://etherscan.io/tx/{}", t);
-                    }
-                    Err(e) => {
-                        warn!("Failed to forward matched orders! {}", e);
-                        // todo: how should we handle this when no executioner is running
-                        // eg in tests?
-                        //return Err(BookError::Web3Error);
-                    }
-                };
-
-                info!("Executed {}", matching_order);
-
-                // stop if the order_amount is filled.
-                if order_amount.is_zero() {
-                    if !matching_amount.is_zero() {
-                        // todo: push back seems like it should be put to the front?
-                        // Put the last popped out order back in the queue.
-                        orders_queue.push_back(matching_order);
-                    }
-                    break;
+                    return self.add_order(order);
                 }
 
-                // run out of orders at this price however we still have position
-                // to fill (order amount != 0)
-                if orders_queue.is_empty() {
-                    break;
-                }
-            }
-
-            // Check if we are done. If not move to next price level
-            if order_amount.is_zero() {
-                break;
-            } else {
-                opposite = match order_side {
-                    OrderSide::Bid => {
-                        let lowest_price_ask =
-                            ask_list.borrow_mut().pop_first();
-                        lowest_price_ask
+                for (price, bids) in self.bids.iter_mut().rev() {
+                    if done || *price < order.price {
+                        break;
                     }
-                    OrderSide::Ask => {
-                        let highest_price_bid =
-                            bid_list.borrow_mut().pop_last();
-                        highest_price_bid
+
+                    for bid in bids {
+                        if bid.user == order.user {
+                            continue;
+                        }
+                        let amount: U256 = match bid.amount.cmp(&running_total)
+                        {
+                            Ordering::Greater => order.amount,
+                            _ => bid.amount,
+                        };
+
+                        order = Book::fill(order, amount);
+                        *bid = Book::fill(bid.clone(), amount);
+
+                        running_total -= amount;
+
+                        if running_total.is_zero() {
+                            done = true;
+                            break;
+                        }
                     }
-                };
-                if opposite.is_none() {
-                    // Nothing on the opposite side.
-                    info!(
-                        "Adding {} due to lack of counterparty volume",
-                        order
-                    );
-                    return self.add_order(order); // Store the order and we are done.
                 }
 
-                // revaluate if we are done
-                (price, orders_queue) = opposite.unwrap();
-                done = if order_side == OrderSide::Bid {
-                    order_price < price
-                } else {
-                    order_price > price
-                };
-            }
-        }
-
-        // put any outstanding orders back into their rightful order queue
-        if !orders_queue.is_empty() {
-            match order_side {
-                OrderSide::Bid => {
-                    let mut asks = ask_list.borrow_mut();
-                    asks.insert(price, orders_queue);
-                }
-                OrderSide::Ask => {
-                    let mut bids = bid_list.borrow_mut();
-                    bids.insert(price, orders_queue);
+                if running_total > U256::zero() {
+                    return self.add_order(order);
                 }
             }
-        }
-
-        // if the order still isn't filled, its not possible.
-        // place it on the books
-        if !order_amount.is_zero() {
-            // Order still has units but could not be filled
-            *order.amount_mut() = order_amount;
-            let _ = self.add_order(order);
         }
 
         Ok(())
