@@ -237,7 +237,8 @@ impl Book {
                             order.clone(),
                             ask.clone(),
                             executioner_address.clone(),
-                        ).await;
+                        )
+                        .await;
 
                         if ask.amount.is_zero() { /* TODO: delete ask order */ }
 
@@ -286,7 +287,8 @@ impl Book {
                             order.clone(),
                             bid.clone(),
                             executioner_address.clone(),
-                        ).await;
+                        )
+                        .await;
 
                         running_total -= amount;
 
