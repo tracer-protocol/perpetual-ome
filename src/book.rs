@@ -8,6 +8,7 @@ use std::{
 
 use chrono::{DateTime, Utc};
 use ethereum_types::U256;
+use itertools::Either;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use web3::types::Address;
@@ -133,16 +134,12 @@ impl Book {
                 .values()
                 .flatten()
                 .filter(|order| !order.amount.is_zero())
-                .cloned()
-                .collect::<Vec<Order>>()
-                .len(),
+                .count(),
             self.asks
                 .values()
                 .flatten()
                 .filter(|order| !order.amount.is_zero())
-                .cloned()
-                .collect::<Vec<Order>>()
-                .len(),
+                .count(),
         )
     }
 
@@ -157,17 +154,102 @@ impl Book {
     }
 
     pub fn top(&self) -> (Option<U256>, Option<U256>) {
-        let best_bid: Option<U256> = match self.bids.last_key_value() {
-            Some(t) => Some(*t.0),
-            None => None,
+        (
+            self.bids.last_key_value().map(|t| *t.0),
+            self.asks.first_key_value().map(|t| *t.0),
+        )
+    }
+
+    fn price_viable(
+        opposite: U256,
+        incoming: U256,
+        incoming_side: OrderSide,
+    ) -> bool {
+        match incoming_side {
+            OrderSide::Bid => opposite <= incoming,
+            OrderSide::Ask => opposite >= incoming,
+        }
+    }
+
+    #[allow(unused_must_use)]
+    async fn r#match(
+        &mut self,
+        mut order: Order,
+        executioner_address: String,
+        opposing_top: Option<U256>,
+    ) -> Result<(), BookError> {
+        let opposing_side: &mut BTreeMap<U256, VecDeque<Order>> =
+            match order.side {
+                OrderSide::Bid => &mut self.asks,
+                OrderSide::Ask => &mut self.bids,
+            };
+        let mut running_total: U256 = order.amount;
+        let mut done: bool = false;
+
+        /* if we haven't crossed the spread, we're not going to match */
+        if opposing_top.is_none()
+            || !Book::price_viable(
+                opposing_top.unwrap(),
+                order.price,
+                order.side,
+            )
+        {
+            return self.add_order(order);
+        }
+
+        let opposing_side_iterator = match order.side {
+            OrderSide::Bid => Either::Left(opposing_side.iter_mut()),
+            OrderSide::Ask => Either::Right(opposing_side.iter_mut().rev()),
         };
 
-        let best_ask: Option<U256> = match self.asks.first_key_value() {
-            Some(t) => Some(*t.0),
-            None => None,
-        };
+        for (price, opposites) in opposing_side_iterator {
+            dbg!(&opposites);
+            /* if we've run out of viable prices or we're done, halt */
+            if done || !Book::price_viable(*price, order.price, order.side) {
+                break;
+            }
 
-        (best_bid, best_ask)
+            for opposite in opposites {
+                /* no self-trading allowed */
+                if opposite.user == order.user {
+                    continue;
+                }
+
+                /* determine how much to match */
+                let amount: U256 = match opposite.amount.cmp(&order.amount) {
+                    Ordering::Greater => order.amount,
+                    _ => opposite.amount,
+                };
+
+                /* match */
+                order = Book::fill(order, amount);
+                *opposite = Book::fill(opposite.clone(), amount);
+
+                rpc::send_matched_orders(
+                    order.clone(),
+                    opposite.clone(),
+                    executioner_address.clone(),
+                )
+                .await;
+
+                if opposite.amount.is_zero() { /* TODO: delete ask order */ }
+
+                running_total -= amount;
+
+                /* check if we've totally matched our incoming order */
+                if running_total.is_zero() {
+                    done = true;
+                    break;
+                }
+            }
+        }
+
+        /* if our incoming order has any volume left, add it to the book */
+        if running_total > U256::zero() {
+            self.add_order(order)
+        } else {
+            Ok(())
+        }
     }
 
     fn fill(order: Order, amount: U256) -> Order {
@@ -192,118 +274,19 @@ impl Book {
     /// in the order book for future matching.
     pub async fn submit(
         &mut self,
-        mut order: Order,
+        order: Order,
         executioner_address: String,
     ) -> Result<(), BookError> {
         info!("Received {}", order);
 
-        let mut running_total: U256 = order.amount;
-        let mut done: bool = false;
-
         match order.side {
             OrderSide::Bid => {
-                let opposing_top: Option<U256> = self.top().1;
-
-                /* if we haven't crossed the spread, we're not going to match */
-                if opposing_top.is_none() || opposing_top.unwrap() > order.price
-                {
-                    return self.add_order(order);
-                }
-
-                for (price, asks) in self.asks.iter_mut() {
-                    /* if we've run out of viable prices or we're done, halt */
-                    if done || *price > order.price {
-                        break;
-                    }
-
-                    for ask in asks {
-                        /* no self-trading allowed */
-                        if ask.user == order.user {
-                            continue;
-                        }
-
-                        /* determine how much to match */
-                        let amount: U256 = match ask.amount.cmp(&order.amount) {
-                            Ordering::Greater => order.amount,
-                            _ => ask.amount,
-                        };
-
-                        /* match */
-                        order = Book::fill(order, amount);
-                        *ask = Book::fill(ask.clone(), amount);
-
-                        rpc::send_matched_orders(
-                            order.clone(),
-                            ask.clone(),
-                            executioner_address.clone(),
-                        )
-                        .await;
-
-                        if ask.amount.is_zero() { /* TODO: delete ask order */ }
-
-                        running_total -= amount;
-
-                        /* check if we've totally matched our incoming order */
-                        if running_total.is_zero() {
-                            done = true;
-                            break;
-                        }
-                    }
-                }
-
-                /* if our incoming order has any volume left, add it to the book */
-                if running_total > U256::zero() {
-                    return self.add_order(order);
-                }
+                self.r#match(order, executioner_address, self.top().1).await
             }
             OrderSide::Ask => {
-                let opposing_top: Option<U256> = self.top().0;
-
-                if opposing_top.is_none() || opposing_top.unwrap() < order.price
-                {
-                    return self.add_order(order);
-                }
-
-                for (price, bids) in self.bids.iter_mut().rev() {
-                    if done || *price < order.price {
-                        break;
-                    }
-
-                    for bid in bids {
-                        if bid.user == order.user {
-                            continue;
-                        }
-                        let amount: U256 = match bid.amount.cmp(&order.amount) {
-                            Ordering::Greater => order.amount,
-                            _ => bid.amount,
-                        };
-
-                        order = Book::fill(order, amount);
-                        *bid = Book::fill(bid.clone(), amount);
-
-                        rpc::send_matched_orders(
-                            order.clone(),
-                            bid.clone(),
-                            executioner_address.clone(),
-                        )
-                        .await;
-
-                        running_total -= amount;
-
-                        if running_total.is_zero() {
-                            done = true;
-                            break;
-                        }
-                    }
-                }
-
-                if running_total > U256::zero() {
-                    return self.add_order(order);
-                }
+                self.r#match(order, executioner_address, self.top().0).await
             }
         }
-
-        Ok(())
     }
 
     #[allow(clippy::unnecessary_wraps)]
