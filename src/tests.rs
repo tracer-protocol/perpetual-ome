@@ -19,6 +19,7 @@ mod order_tests {
             price,
             amount,
             Utc::now(),
+            Utc::now(),
             vec![],
         );
 
