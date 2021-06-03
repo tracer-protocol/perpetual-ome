@@ -224,6 +224,8 @@ impl Book {
                 order = Book::fill(order, amount);
                 *opposite = Book::fill(opposite.clone(), amount);
 
+                self.ltp = *price;
+
                 rpc::send_matched_orders(
                     order.clone(),
                     opposite.clone(),
