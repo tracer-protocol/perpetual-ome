@@ -63,8 +63,6 @@ pub struct Order {
     pub amount: U256, /* quantity */
     #[serde(with = "ts_seconds")]
     pub expiration: DateTime<Utc>, /* expiration of the order */
-    #[serde(with = "ts_seconds")]
-    pub created: DateTime<Utc>, /* creation time of the order */
     pub signed_data: Vec<u8>,   /* digital signature of the order */
 }
 
@@ -95,7 +93,6 @@ impl Order {
         price: U256,
         amount: U256,
         expiration: DateTime<Utc>,
-        created: DateTime<Utc>,
         signed_data: Vec<u8>,
     ) -> Self {
         let id: OrderId = 0; /* TODO: determine how IDs are to be generated */
@@ -108,7 +105,6 @@ impl Order {
             price,
             amount,
             expiration,
-            created,
             signed_data,
         }
     }

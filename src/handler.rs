@@ -34,8 +34,6 @@ pub struct CreateOrderRequest {
     amount: U256, /* quantity */
     #[serde(with = "ts_seconds")]
     expiration: DateTime<Utc>, /* expiration of the order */
-    #[serde(with = "ts_seconds")]
-    created: DateTime<Utc>, /* creation time of the order */
     signed_data: Vec<u8>,   /* digital signature of the order */
 }
 
@@ -48,7 +46,6 @@ impl From<CreateOrderRequest> for Order {
         let price: U256 = value.price;
         let amount: U256 = value.amount;
         let expiration: DateTime<Utc> = value.expiration;
-        let created: DateTime<Utc> = value.created;
         let signed_data: Vec<u8> = value.signed_data;
 
         /* construct order */
@@ -59,7 +56,6 @@ impl From<CreateOrderRequest> for Order {
             price,
             amount,
             expiration,
-            created,
             signed_data,
         )
     }
