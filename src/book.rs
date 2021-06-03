@@ -262,6 +262,7 @@ impl Book {
                 price: order.price,
                 amount: order.amount - amount,
                 expiration: order.expiration,
+                created: order.created,
                 signed_data: order.signed_data,
             },
         }
