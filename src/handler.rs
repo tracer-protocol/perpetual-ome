@@ -69,7 +69,7 @@ pub type UpdateOrderRequest = CreateOrderRequest;
 
 /// HEALTH POINT HANDLER
 pub async fn health_check_handler() -> Result<impl Reply, Infallible> {
-    return Ok(warp::reply::with_status("", http::StatusCode::OK));
+    Ok(warp::reply::with_status("", http::StatusCode::OK))
 }
 
 /// REST API route handler for listing all order books
