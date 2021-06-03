@@ -203,7 +203,6 @@ impl Book {
         };
 
         for (price, opposites) in opposing_side_iterator {
-            dbg!(&opposites);
             /* if we've run out of viable prices or we're done, halt */
             if done || !Book::price_viable(*price, order.price, order.side) {
                 break;

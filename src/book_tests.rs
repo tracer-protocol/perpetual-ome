@@ -332,8 +332,6 @@ pub async fn test_deep_sell() {
     let submit_res: Result<(), BookError> =
         book.submit(ask, TEST_RPC_ADDRESS.to_string()).await;
 
-    dbg!(&book);
-
     let (bid_length, ask_length) = book.depth();
 
     assert!(
