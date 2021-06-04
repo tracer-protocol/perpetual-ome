@@ -133,12 +133,12 @@ impl Book {
             self.bids
                 .values()
                 .flatten()
-                .filter(|order| !order.amount.is_zero())
+                .filter(|order| !order.amount_left.is_zero())
                 .count(),
             self.asks
                 .values()
                 .flatten()
-                .filter(|order| !order.amount.is_zero())
+                .filter(|order| !order.amount_left.is_zero())
                 .count(),
         )
     }
@@ -183,7 +183,7 @@ impl Book {
                 OrderSide::Bid => &mut self.asks,
                 OrderSide::Ask => &mut self.bids,
             };
-        let mut running_total: U256 = order.amount;
+        let mut running_total: U256 = order.amount_left;
         let mut done: bool = false;
 
         /* if we haven't crossed the spread, we're not going to match */
@@ -215,10 +215,11 @@ impl Book {
                 }
 
                 /* determine how much to match */
-                let amount: U256 = match opposite.amount.cmp(&order.amount) {
-                    Ordering::Greater => order.amount,
-                    _ => opposite.amount,
-                };
+                let amount: U256 =
+                    match opposite.amount_left.cmp(&order.amount_left) {
+                        Ordering::Greater => order.amount_left,
+                        _ => opposite.amount_left,
+                    };
 
                 /* match */
                 order = Book::fill(order, amount);
@@ -233,8 +234,10 @@ impl Book {
                 )
                 .await;
 
-                if opposite.amount.is_zero() { /* TODO: delete ask order */ }
+                if opposite.amount_left.is_zero() { /* TODO: delete ask order */
+                }
 
+                dbg!(&running_total, &amount);
                 running_total -= amount;
 
                 /* check if we've totally matched our incoming order */
@@ -254,7 +257,7 @@ impl Book {
     }
 
     fn fill(order: Order, amount: U256) -> Order {
-        match amount.cmp(&order.amount) {
+        match amount.cmp(&order.amount_left) {
             Ordering::Greater => order,
             _ => Order {
                 id: order.id,
@@ -262,7 +265,8 @@ impl Book {
                 target_tracer: order.target_tracer,
                 side: order.side,
                 price: order.price,
-                amount: order.amount - amount,
+                amount,
+                amount_left: order.amount_left - amount,
                 expiration: order.expiration,
                 created: order.created,
                 signed_data: order.signed_data,

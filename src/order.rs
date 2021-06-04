@@ -61,11 +61,13 @@ pub struct Order {
     pub price: U256, /* price */
     #[serde(serialize_with = "from_hex_se", deserialize_with = "from_hex_de")]
     pub amount: U256, /* quantity */
+    #[serde(skip)]
+    pub amount_left: U256,
     #[serde(with = "ts_seconds")]
     pub expiration: DateTime<Utc>, /* expiration of the order */
     #[serde(with = "ts_seconds")]
     pub created: DateTime<Utc>, /* creation time of the order */
-    pub signed_data: Vec<u8>,   /* digital signature of the order */
+    pub signed_data: Vec<u8>, /* digital signature of the order */
 }
 
 impl fmt::Display for Order {
@@ -107,6 +109,7 @@ impl Order {
             side,
             price,
             amount,
+            amount_left: amount,
             expiration,
             created,
             signed_data,
