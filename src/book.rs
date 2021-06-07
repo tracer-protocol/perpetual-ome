@@ -237,7 +237,6 @@ impl Book {
                 if opposite.amount_left.is_zero() { /* TODO: delete ask order */
                 }
 
-                dbg!(&running_total, &amount);
                 running_total -= amount;
 
                 /* check if we've totally matched our incoming order */
