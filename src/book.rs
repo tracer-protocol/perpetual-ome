@@ -234,9 +234,6 @@ impl Book {
                 )
                 .await;
 
-                if opposite.amount_left.is_zero() { /* TODO: delete ask order */
-                }
-
                 running_total -= amount;
 
                 /* check if we've totally matched our incoming order */
@@ -273,6 +270,16 @@ impl Book {
         }
     }
 
+    fn prune(&mut self) {
+        for (_price, orders) in self.bids.iter_mut() {
+            orders.retain(|order| !order.amount_left.is_zero());
+        }
+
+        for (_price, orders) in self.asks.iter_mut() {
+            orders.retain(|order| !order.amount_left.is_zero());
+        }
+    }
+
     /// Submits an order to the matching engine
     ///
     /// In the event the order cannot be (fully) matched, it will be stored
@@ -284,14 +291,18 @@ impl Book {
     ) -> Result<(), BookError> {
         info!("Received {}", order);
 
-        match order.side {
+        let match_result: Result<(), BookError> = match order.side {
             OrderSide::Bid => {
                 self.r#match(order, executioner_address, self.top().1).await
             }
             OrderSide::Ask => {
                 self.r#match(order, executioner_address, self.top().0).await
             }
-        }
+        };
+
+        self.prune();
+
+        match_result
     }
 
     #[allow(clippy::unnecessary_wraps)]
