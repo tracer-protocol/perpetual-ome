@@ -234,9 +234,6 @@ impl Book {
                 )
                 .await;
 
-                if opposite.amount_left.is_zero() { /* TODO: delete ask order */
-                }
-
                 running_total -= amount;
 
                 /* check if we've totally matched our incoming order */
