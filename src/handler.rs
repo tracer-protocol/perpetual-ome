@@ -13,6 +13,7 @@ use warp::{Rejection, Reply};
 
 use crate::book::Book;
 use crate::order::{Order, OrderId, OrderSide};
+use crate::rpc;
 use crate::state::OmeState;
 use crate::util::{from_hex_de, from_hex_se};
 
@@ -149,6 +150,23 @@ pub async fn create_order_handler(
     let new_order: Order = Order::from(request);
 
     info!("Creating order {}...", new_order);
+
+    let valid_order: bool = match rpc::check_order_validity(
+        new_order.clone(),
+        rpc_endpoint.clone(),
+    )
+    .await
+    {
+        Ok(_t) => true,
+        Err(_e) => false,
+    };
+
+    if !valid_order {
+        return Ok(warp::reply::with_status(
+            "Invalid order",
+            http::StatusCode::BAD_REQUEST,
+        ));
+    }
 
     /* acquire lock on global state */
     let mut ome_state: MutexGuard<OmeState> = state.lock().await;
