@@ -157,7 +157,7 @@ pub async fn create_order_handler(
     )
     .await
     {
-        Ok(_t) => true,
+        Ok(t) => t,
         Err(_e) => false,
     };
 
