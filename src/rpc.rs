@@ -32,6 +32,24 @@ pub struct MatchRequest {
     taker: Order,
 }
 
+#[allow(unused_must_use)]
+pub async fn check_order_validity(
+    order: Order,
+    address: String,
+) -> Result<(), RpcError> {
+    let endpoint: String = address + "/check";
+    let client: Client = Client::new();
+
+    client
+        .post(endpoint)
+        .header(header::CONTENT_TYPE, "application/json")
+        .body(serde_json::to_string(&order).unwrap())
+        .send()
+        .await;
+
+    Ok(())
+}
+
 pub async fn send_matched_orders(
     maker: Order,
     taker: Order,
