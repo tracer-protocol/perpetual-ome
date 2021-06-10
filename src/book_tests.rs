@@ -401,8 +401,8 @@ pub async fn test_partial_matching_mutability() {
             traders[0],
             market,
             OrderSide::Ask,
-            U256::from_dec_str("").unwrap(), /* TODO: fix */
-            U256::from_dec_str("").unwrap(), /* TODO: fix */
+            U256::from_dec_str("1150000000000000000").unwrap(),
+            U256::from_dec_str("1200000000000000000").unwrap(),
             the_far_future,
             Utc::now(),
             vec![],
@@ -412,8 +412,8 @@ pub async fn test_partial_matching_mutability() {
             traders[1],
             market,
             OrderSide::Bid,
-            U256::from_dec_str("").unwrap(), /* TODO: fix */
-            U256::from_dec_str("").unwrap(), /* TODO: fix */
+            U256::from_dec_str("1200000000000000000").unwrap(),
+            U256::from_dec_str("1000000000000000000").unwrap(),
             the_far_future,
             Utc::now(),
             vec![],
@@ -423,8 +423,8 @@ pub async fn test_partial_matching_mutability() {
             traders[2],
             market,
             OrderSide::Bid,
-            U256::from_dec_str("").unwrap(), /* TODO: fix */
-            U256::from_dec_str("").unwrap(), /* TODO: fix */
+            U256::from_dec_str("1200000000000000000").unwrap(),
+            U256::from_dec_str("1000000000000000000").unwrap(),
             the_far_future,
             Utc::now(),
             vec![],
@@ -446,12 +446,20 @@ pub async fn test_partial_matching_mutability() {
             let mut side: BTreeMap<U256, VecDeque<Order>> = BTreeMap::new();
             let mut level: VecDeque<Order> = VecDeque::new();
             let mut order: Order = orders[2].clone();
-            order.amount_left = U256::from_dec_str("").unwrap() /* TODO: 0.8 */
+            order.amount_left =
+                U256::from_dec_str("0800000000000000000").unwrap();
             level.push_back(order);
             side.insert(orders[2].clone().price, level);
             side
         },
-        asks: BTreeMap::new(),
+        asks: {
+            let mut side: BTreeMap<U256, VecDeque<Order>> = BTreeMap::new();
+            side.insert(
+                U256::from_dec_str("1150000000000000000").unwrap(),
+                VecDeque::new(),
+            );
+            side
+        },
         ltp: orders[2].price, /* TODO: confirm */
         depth: (1, 0),
         crossed: false,
