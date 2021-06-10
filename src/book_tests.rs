@@ -460,10 +460,10 @@ pub async fn test_partial_matching_mutability() {
             );
             side
         },
-        ltp: orders[2].price, /* TODO: confirm */
+        ltp: orders[0].price, // trade price is whichever order came first eg make
         depth: (1, 0),
         crossed: false,
-        spread: orders[2].price, /* TODO: fix */
+        spread: U256::from_dec_str("0").unwrap(), // todo check how this is calculated
     };
 
     assert_eq!(actual_book, expected_book);

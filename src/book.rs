@@ -261,7 +261,7 @@ impl Book {
                 target_tracer: order.target_tracer,
                 side: order.side,
                 price: order.price,
-                amount,
+                amount: order.amount,
                 amount_left: order.amount_left - amount,
                 expiration: order.expiration,
                 created: order.created,
