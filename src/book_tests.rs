@@ -401,8 +401,8 @@ pub async fn test_partial_matching_mutability() {
             traders[0],
             market,
             OrderSide::Ask,
-            U256::from_dec_str("").unwrap(),
-            U256::from_dec_str("").unwrap(),
+            U256::from_dec_str("").unwrap(), /* TODO: fix */
+            U256::from_dec_str("").unwrap(), /* TODO: fix */
             the_far_future,
             Utc::now(),
             vec![],
@@ -412,8 +412,8 @@ pub async fn test_partial_matching_mutability() {
             traders[1],
             market,
             OrderSide::Bid,
-            U256::from_dec_str("").unwrap(),
-            U256::from_dec_str("").unwrap(),
+            U256::from_dec_str("").unwrap(), /* TODO: fix */
+            U256::from_dec_str("").unwrap(), /* TODO: fix */
             the_far_future,
             Utc::now(),
             vec![],
@@ -423,8 +423,8 @@ pub async fn test_partial_matching_mutability() {
             traders[2],
             market,
             OrderSide::Bid,
-            U256::from_dec_str("").unwrap(),
-            U256::from_dec_str("").unwrap(),
+            U256::from_dec_str("").unwrap(), /* TODO: fix */
+            U256::from_dec_str("").unwrap(), /* TODO: fix */
             the_far_future,
             Utc::now(),
             vec![],
@@ -445,15 +445,17 @@ pub async fn test_partial_matching_mutability() {
         bids: {
             let mut side: BTreeMap<U256, VecDeque<Order>> = BTreeMap::new();
             let mut level: VecDeque<Order> = VecDeque::new();
-            level.push_back(orders[2].clone());
+            let mut order: Order = orders[2].clone();
+            order.amount_left = U256::from_dec_str("").unwrap() /* TODO: 0.8 */
+            level.push_back(order);
             side.insert(orders[2].clone().price, level);
             side
         },
         asks: BTreeMap::new(),
-        ltp: orders[2].price,
+        ltp: orders[2].price, /* TODO: confirm */
         depth: (1, 0),
         crossed: false,
-        spread: orders[2].price,
+        spread: orders[2].price, /* TODO: fix */
     };
 
     assert_eq!(actual_book, expected_book);
