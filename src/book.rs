@@ -287,6 +287,9 @@ impl Book {
         for (_price, orders) in self.asks.iter_mut() {
             orders.retain(|order| !order.amount_left.is_zero());
         }
+
+        self.bids.retain(|_price, orders| !orders.is_empty());
+        self.asks.retain(|_price, orders| !orders.is_empty());
     }
 
     /// Submits an order to the matching engine

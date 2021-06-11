@@ -452,14 +452,7 @@ pub async fn test_partial_matching_mutability() {
             side.insert(orders[2].clone().price, level);
             side
         },
-        asks: {
-            let mut side: BTreeMap<U256, VecDeque<Order>> = BTreeMap::new();
-            side.insert(
-                U256::from_dec_str("1150000000000000000").unwrap(),
-                VecDeque::new(),
-            );
-            side
-        },
+        asks: BTreeMap::new(),
         ltp: orders[0].price, // trade price is whichever order came first eg make
         depth: (1, 0),
         crossed: false,
