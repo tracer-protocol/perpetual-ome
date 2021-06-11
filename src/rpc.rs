@@ -32,6 +32,11 @@ pub struct MatchRequest {
     taker: Order,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct CheckRequest {
+    order: Order,
+}
+
 #[allow(unused_must_use)]
 pub async fn check_order_validity(
     order: Order,
@@ -39,11 +44,12 @@ pub async fn check_order_validity(
 ) -> Result<bool, RpcError> {
     let endpoint: String = address + "/check";
     let client: Client = Client::new();
+    let payload: CheckRequest = CheckRequest { order };
 
     let response: Response = match client
         .post(endpoint)
         .header(header::CONTENT_TYPE, "application/json")
-        .body(serde_json::to_string(&order).unwrap())
+        .body(serde_json::to_string(&payload).unwrap())
         .send()
         .await
     {
