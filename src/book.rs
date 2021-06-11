@@ -300,7 +300,7 @@ impl Book {
             }
         };
 
-        self.prune();
+        self.update();
 
         match_result
     }
@@ -378,7 +378,7 @@ impl Book {
     /// Should be called *after successful* mutation of order book state.
     #[allow(dead_code)]
     fn update(&mut self) {
-        self.depth = (self.bids.len(), self.asks.len());
-        /* TODO: check for crossed state */
+        self.prune();
+        self.depth = self.depth();
     }
 }
