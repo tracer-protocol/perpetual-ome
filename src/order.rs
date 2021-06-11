@@ -74,8 +74,13 @@ impl fmt::Display for Order {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "#{} [{}] {} {} @ {}",
-            self.id, self.target_tracer, self.side, self.amount, self.price
+            "<ID:{} Market: {} Side: {} Price: {} Quantity: {} Remaining: {}>",
+            self.id,
+            self.target_tracer,
+            self.side,
+            self.price,
+            self.amount,
+            self.amount_left
         )
     }
 }

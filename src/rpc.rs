@@ -46,8 +46,13 @@ pub async fn check_order_validity(
     let client: Client = Client::new();
     let payload: CheckRequest = CheckRequest { order };
 
+    info!(
+        "Checking order validity by sending {} to {}...",
+        order, endpoint
+    );
+
     let response: Response = match client
-        .post(endpoint)
+        .post(endpoint.clone())
         .header(header::CONTENT_TYPE, "application/json")
         .body(serde_json::to_string(&payload).unwrap())
         .send()
@@ -57,6 +62,8 @@ pub async fn check_order_validity(
         Err(e) => return Err(e.into()),
     };
 
+    info!("{} said {}", endpoint, response.status());
+
     Ok(response.status().is_success())
 }
 
@@ -65,6 +72,11 @@ pub async fn send_matched_orders(
     taker: Order,
     address: String,
 ) -> Result<H160, RpcError> {
+    info!(
+        "Forwarding matched pair ({}, {}) to {}...",
+        maker, taker, address
+    );
+
     let payload: MatchRequest = MatchRequest { maker, taker };
     let client: Client = Client::new();
     let endpoint: String = address + "/submit";
@@ -82,6 +94,8 @@ pub async fn send_matched_orders(
             return Err(RpcError::from(e));
         }
     };
+
+    info!("{} said {}", address, result.status());
 
     /* extract the transaction hash from the response body */
     let hash: H160 = match result.text().await {
