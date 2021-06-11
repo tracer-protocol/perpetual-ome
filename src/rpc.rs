@@ -61,10 +61,11 @@ pub async fn send_matched_orders(
 ) -> Result<H160, RpcError> {
     let payload: MatchRequest = MatchRequest { maker, taker };
     let client: Client = Client::new();
+    let endpoint: String = address + "/submit";
 
     /* post the matched orders to the forwarder */
     let result: Response = match client
-        .post(&address)
+        .post(endpoint)
         .header(header::CONTENT_TYPE, "application/json")
         .body(serde_json::to_string(&payload).unwrap())
         .send()
