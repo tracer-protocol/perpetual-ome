@@ -32,7 +32,7 @@ pub struct MatchRequest {
     taker: Order,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CheckRequest {
     order: Order,
 }
@@ -44,7 +44,9 @@ pub async fn check_order_validity(
 ) -> Result<bool, RpcError> {
     let endpoint: String = address + "/check";
     let client: Client = Client::new();
-    let payload: CheckRequest = CheckRequest { order };
+    let payload: CheckRequest = CheckRequest {
+        order: order.clone(),
+    };
 
     info!(
         "Checking order validity by sending {} to {}...",
@@ -79,7 +81,7 @@ pub async fn send_matched_orders(
 
     let payload: MatchRequest = MatchRequest { maker, taker };
     let client: Client = Client::new();
-    let endpoint: String = address + "/submit";
+    let endpoint: String = address.clone() + "/submit";
 
     /* post the matched orders to the forwarder */
     let result: Response = match client
