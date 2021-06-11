@@ -20,7 +20,7 @@ use crate::util::{from_hex_de, from_hex_se};
 /// Represents an order book for a particular Tracer market
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct Book {
-    market: Address, /* the address of the Tracer market */
+    pub market: Address, /* the address of the Tracer market */
     pub bids: BTreeMap<U256, VecDeque<Order>>, /* buy-side */
     pub asks: BTreeMap<U256, VecDeque<Order>>, /* sell-side */
     #[serde(
@@ -28,11 +28,11 @@ pub struct Book {
         deserialize_with = "from_hex_de",
         rename = "LTP"
     )]
-    ltp: U256, /* last traded price */
-    depth: (usize, usize), /* depth  */
-    crossed: bool,   /* is book crossed? */
+    pub ltp: U256, /* last traded price */
+    pub depth: (usize, usize), /* depth  */
+    pub crossed: bool,   /* is book crossed? */
     #[serde(serialize_with = "from_hex_se", deserialize_with = "from_hex_de")]
-    spread: U256, /* bid-ask spread */
+    pub spread: U256, /* bid-ask spread */
 }
 
 #[derive(
@@ -261,7 +261,7 @@ impl Book {
                 target_tracer: order.target_tracer,
                 side: order.side,
                 price: order.price,
-                amount,
+                amount: order.amount,
                 amount_left: order.amount_left - amount,
                 expiration: order.expiration,
                 created: order.created,
@@ -300,7 +300,7 @@ impl Book {
             }
         };
 
-        self.prune();
+        self.update();
 
         match_result
     }
@@ -378,7 +378,7 @@ impl Book {
     /// Should be called *after successful* mutation of order book state.
     #[allow(dead_code)]
     fn update(&mut self) {
-        self.depth = (self.bids.len(), self.asks.len());
-        /* TODO: check for crossed state */
+        self.prune();
+        self.depth = self.depth();
     }
 }
