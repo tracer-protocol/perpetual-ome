@@ -10,7 +10,7 @@ jobs:
              - uses: actions/checkout@v1
 
              - name: Override Rust toolchain to Nightly
-             - run: rustup override set nightly
+               run: rustup override set nightly
 
     build:
         needs: set-nightly
