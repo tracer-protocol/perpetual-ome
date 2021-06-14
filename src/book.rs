@@ -54,6 +54,15 @@ impl From<ethabi::Error> for BookError {
     }
 }
 
+#[derive(
+    Clone, Copy, Debug, Display, Error, Serialize, Deserialize, PartialEq, Eq,
+)]
+pub enum OrderStatus {
+    Add,
+    PartialMatch,
+    FullMatch,
+}
+
 impl Book {
     /// Constructor for the `Book` type
     ///
@@ -177,7 +186,7 @@ impl Book {
         mut order: Order,
         executioner_address: String,
         opposing_top: Option<U256>,
-    ) -> Result<(), BookError> {
+    ) -> Result<OrderStatus, BookError> {
         debug!("Matching {}...", order);
 
         let opposing_side: &mut BTreeMap<U256, VecDeque<Order>> =
@@ -197,7 +206,8 @@ impl Book {
             )
         {
             debug!("{} does not cross, adding...", order);
-            return self.add_order(order);
+            self.add_order(order);
+            return Ok(OrderStatus::Add);
         }
 
         let opposing_side_iterator = match order.side {
@@ -254,9 +264,10 @@ impl Book {
 
         /* if our incoming order has any volume left, add it to the book */
         if running_total > U256::zero() {
-            self.add_order(order)
+            self.add_order(order);
+            Ok(OrderStatus::PartialMatch)
         } else {
-            Ok(())
+            Ok(OrderStatus::FullMatch)
         }
     }
 
@@ -300,10 +311,10 @@ impl Book {
         &mut self,
         order: Order,
         executioner_address: String,
-    ) -> Result<(), BookError> {
+    ) -> Result<OrderStatus, BookError> {
         debug!("Submitting {}...", order);
 
-        let match_result: Result<(), BookError> = match order.side {
+        let match_result: Result<OrderStatus, BookError> = match order.side {
             OrderSide::Bid => {
                 self.r#match(order, executioner_address, self.top().1).await
             }

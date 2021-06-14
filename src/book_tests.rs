@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, VecDeque};
 use chrono::{DateTime, NaiveDateTime, Utc};
 use ethereum_types::{Address, U256};
 
-use crate::book::{Book, BookError};
+use crate::book::{Book, BookError, OrderStatus};
 use crate::order::{Order, OrderSide};
 
 pub const TEST_RPC_ADDRESS: &str = "http://localhost:3000";
@@ -35,7 +35,7 @@ async fn submit_orders(
     for order in orders {
         book.submit(order.clone(), TEST_RPC_ADDRESS.to_string())
             .await
-            .expect("Failed to submit order to book")
+            .expect("Failed to submit order to book");
     }
 
     book
@@ -103,7 +103,7 @@ pub async fn test_simple_buy() {
         vec![],
     );
 
-    let submit_res: Result<(), BookError> =
+    let submit_res: Result<OrderStatus, BookError> =
         book.submit(bid, TEST_RPC_ADDRESS.to_string()).await;
 
     let (bid_length, ask_length) = book.depth();
@@ -132,7 +132,7 @@ pub async fn test_simple_buy_partially_filled() {
         vec![],
     );
 
-    let submit_res: Result<(), BookError> =
+    let submit_res: Result<OrderStatus, BookError> =
         book.submit(bid, TEST_RPC_ADDRESS.to_string()).await;
 
     let (bid_length, ask_length) = book.depth();
@@ -160,7 +160,7 @@ pub async fn test_simple_sell() {
         vec![],
     );
 
-    let submit_res: Result<(), BookError> =
+    let submit_res: Result<OrderStatus, BookError> =
         book.submit(ask, TEST_RPC_ADDRESS.to_string()).await;
 
     let (bid_length, ask_length) = book.depth();
@@ -189,7 +189,7 @@ pub async fn test_simple_sell_partially_filled() {
         vec![],
     );
 
-    let submit_res: Result<(), BookError> =
+    let submit_res: Result<OrderStatus, BookError> =
         book.submit(bid, TEST_RPC_ADDRESS.to_string()).await;
 
     let (bid_length, ask_length) = book.depth();
@@ -218,7 +218,7 @@ pub async fn test_deep_buy() {
         vec![],
     );
 
-    let submit_res: Result<(), BookError> =
+    let submit_res: Result<OrderStatus, BookError> =
         book.submit(bid, TEST_RPC_ADDRESS.to_string()).await;
 
     let (bid_length, ask_length) = book.depth();
@@ -248,12 +248,12 @@ pub async fn test_no_self_matching() {
         vec![],
     );
 
-    let actual_res: Result<(), BookError> =
+    let actual_res: Result<OrderStatus, BookError> =
         book.submit(bid, TEST_RPC_ADDRESS.to_string()).await;
 
     let (bid_depth, ask_depth) = book.depth();
 
-    assert_eq!(actual_res, Ok(()));
+    assert_eq!(actual_res, Ok(OrderStatus::FullMatch));
     assert_eq!(bid_depth, 5);
     assert_eq!(ask_depth, 4);
 }
@@ -289,12 +289,12 @@ pub async fn test_no_self_matching_when_last_order() {
         .await
         .unwrap();
 
-    let actual_res: Result<(), BookError> =
+    let actual_res: Result<OrderStatus, BookError> =
         book.submit(bid, TEST_RPC_ADDRESS.to_string()).await;
 
     let (bid_depth, ask_depth) = book.depth();
 
-    assert_eq!(actual_res, Ok(()));
+    assert_eq!(actual_res, Ok(OrderStatus::PartialMatch));
     assert_eq!(bid_depth, 1);
     assert_eq!(ask_depth, 1);
 }
@@ -314,7 +314,7 @@ pub async fn test_deep_buy_with_limit() {
         vec![],
     );
 
-    let submit_res: Result<(), BookError> =
+    let submit_res: Result<OrderStatus, BookError> =
         book.submit(bid, TEST_RPC_ADDRESS.to_string()).await;
 
     let (bid_length, ask_length) = book.depth();
@@ -342,7 +342,7 @@ pub async fn test_deep_sell() {
         vec![],
     );
 
-    let submit_res: Result<(), BookError> =
+    let submit_res: Result<OrderStatus, BookError> =
         book.submit(ask, TEST_RPC_ADDRESS.to_string()).await;
 
     let (bid_length, ask_length) = book.depth();
@@ -371,7 +371,7 @@ pub async fn test_deep_sell_with_limit() {
         vec![],
     );
 
-    let submit_res: Result<(), BookError> =
+    let submit_res: Result<OrderStatus, BookError> =
         book.submit(ask, TEST_RPC_ADDRESS.to_string()).await;
 
     let (bid_length, ask_length) = book.depth();

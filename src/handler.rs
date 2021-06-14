@@ -142,7 +142,7 @@ pub async fn create_order_handler(
         || request.amount > U256::from(u128::MAX)
     {
         return Ok(warp::reply::with_status(
-            "Integers out of bounds",
+            "Integers out of bounds".to_string(),
             http::StatusCode::BAD_REQUEST,
         ));
     }
@@ -163,7 +163,7 @@ pub async fn create_order_handler(
 
     if !valid_order {
         return Ok(warp::reply::with_status(
-            "Invalid order",
+            "Invalid order".to_string(),
             http::StatusCode::BAD_REQUEST,
         ));
     }
@@ -180,7 +180,7 @@ pub async fn create_order_handler(
                 new_order
             );
             return Ok(warp::reply::with_status(
-                "Market does not exist",
+                "Market does not exist".to_string(),
                 http::StatusCode::NOT_FOUND,
             ));
         }
@@ -190,14 +190,17 @@ pub async fn create_order_handler(
 
     /* submit order to the engine for matching */
     match book.submit(new_order, rpc_endpoint).await {
-        Ok(_) => {
+        Ok(order_status) => {
             info!("Created order {}", tmp_order);
-            Ok(warp::reply::with_status("", http::StatusCode::OK))
+            Ok(warp::reply::with_status(
+                order_status.to_string(),
+                http::StatusCode::OK,
+            ))
         }
         Err(e) => {
             warn!("Failed to create order {}! Engine said: {}", tmp_order, e);
             Ok(warp::reply::with_status(
-                "",
+                "".to_string(),
                 http::StatusCode::INTERNAL_SERVER_ERROR,
             ))
         }
