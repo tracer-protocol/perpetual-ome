@@ -17,6 +17,12 @@ use crate::rpc;
 use crate::state::OmeState;
 use crate::util::{from_hex_de, from_hex_se};
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct OmeErrorResponse {
+    pub status: u16, /* this should be the StatusCode type, but serde */
+    pub message: String,
+}
+
 /// Represents an API request to create a new order book
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CreateBookRequest {
