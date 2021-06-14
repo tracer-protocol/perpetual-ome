@@ -3,7 +3,15 @@ name: Main
 on: [push]
 
 jobs:
+    set-nightly:
+        runs-on: ubuntu-latest
+
+        steps:
+             - name: Override Rust toolchain to Nightly
+             - rustup override set nightly
+
     build:
+        needs: set-nightly
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v1
@@ -11,6 +19,7 @@ jobs:
             - name: Run build
               run: cargo build --verbose
     test:
+        needs: set-nightly
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v1
@@ -19,6 +28,7 @@ jobs:
               run: cargo test --verbose
 
     lint:
+        needs: set-nightly
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v1
@@ -33,6 +43,7 @@ jobs:
               run: cargo check --verbose
     
     benchmark:
+        needs: set-nightly
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v1
@@ -41,6 +52,7 @@ jobs:
               run: cargo bench --verbose
 
     audit:
+        needs: set-nightly
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v1
