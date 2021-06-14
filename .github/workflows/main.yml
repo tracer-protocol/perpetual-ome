@@ -3,37 +3,37 @@ name: Main
 on: [push]
 
 jobs:
-    set-nightly:
-        runs-on: ubuntu-latest
-
-        steps:
-             - uses: actions/checkout@v1
-
-             - name: Override Rust toolchain to Nightly
-               run: rustup override set nightly
-
     build:
-        needs: set-nightly
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v1
+            - uses: actions-rs/toolchain@v1
+                with:
+                    toolchain: nightly
+                    override: true
 
             - name: Run build
               run: cargo build --verbose
     test:
-        needs: set-nightly
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v1
+            - uses: actions-rs/toolchain@v1
+                with:
+                    toolchain: nightly
+                    override: true
 
             - name: Run tests
               run: cargo test --verbose
 
     lint:
-        needs: set-nightly
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v1
+            - uses: actions-rs/toolchain@v1
+                with:
+                    toolchain: nightly
+                    override: true
 
             - name: Run Rustfmt
               run: cargo fmt -- --check
@@ -45,19 +45,25 @@ jobs:
               run: cargo check --verbose
     
     benchmark:
-        needs: set-nightly
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v1
+            - uses: actions-rs/toolchain@v1
+                with:
+                    toolchain: nightly
+                    override: true
 
             - name: Run benchmarks
               run: cargo bench --verbose
 
     audit:
-        needs: set-nightly
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v1
+            - uses: actions-rs/toolchain@v1
+                with:
+                    toolchain: nightly
+                    override: true
 
             - name: Run dependency security audit
               run: cargo --verbose audit
