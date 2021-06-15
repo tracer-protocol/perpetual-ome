@@ -12,7 +12,7 @@ use warp::reply::json;
 use warp::{Rejection, Reply};
 
 use crate::book::Book;
-use crate::order::{Order, OrderId, OrderSide};
+use crate::order::{ExternalOrder, Order, OrderId, OrderSide};
 use crate::rpc;
 use crate::state::OmeState;
 use crate::util::{from_hex_de, from_hex_se};
@@ -228,8 +228,8 @@ pub async fn read_order_handler(
     };
 
     /* retrieve order */
-    let order: &Order = match book.order(id) {
-        Some(o) => o,
+    let order: ExternalOrder = match book.order(id) {
+        Some(o) => o.clone().into(),
         None => {
             return Ok(warp::reply::with_status(
                 "Order does not exist in market",
@@ -239,7 +239,7 @@ pub async fn read_order_handler(
         }
     };
 
-    Ok(json(order).into_response())
+    Ok(json(&order).into_response())
 }
 
 /// REST API route handler for updating a single order
@@ -279,9 +279,9 @@ pub async fn update_order_handler(
         }
     };
 
-    *order.price_mut() = request.price;
-    *order.amount_mut() = request.amount;
-    *order.expiration_mut() = request.expiration;
+    order.price = request.price;
+    order.quantity = request.amount;
+    order.expiration = request.expiration;
 
     Ok(warp::reply::with_status("", http::StatusCode::OK).into_response())
 }
@@ -347,7 +347,7 @@ pub async fn market_user_orders_handler(
         .bids
         .values()
         .into_iter()
-        .flat_map(|levels| levels.into_iter().filter(|o| o.user == user))
+        .flat_map(|levels| levels.into_iter().filter(|o| o.trader == user))
         .cloned()
         .collect();
 
@@ -355,7 +355,7 @@ pub async fn market_user_orders_handler(
         .asks
         .values()
         .into_iter()
-        .flat_map(|levels| levels.into_iter().filter(|o| o.user == user))
+        .flat_map(|levels| levels.into_iter().filter(|o| o.trader == user))
         .cloned()
         .collect();
 

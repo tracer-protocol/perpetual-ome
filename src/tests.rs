@@ -23,11 +23,11 @@ mod order_tests {
             vec![],
         );
 
-        assert_eq!(order.user, address);
-        assert_eq!(order.target_tracer, market_address);
+        assert_eq!(order.trader, address);
+        assert_eq!(order.market, market_address);
         assert_eq!(order.side, OrderSide::Bid);
         assert_eq!(order.price, price);
-        assert_eq!(order.amount, amount);
+        assert_eq!(order.quantity, amount);
         assert!(order.signed_data.is_empty());
     }
 }

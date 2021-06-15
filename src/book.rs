@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use web3::types::Address;
 
-use crate::order::{Order, OrderId, OrderSide};
+use crate::order::{ExternalOrder, Order, OrderId, OrderSide};
 use crate::rpc;
 use crate::util::{from_hex_de, from_hex_se};
 
@@ -142,12 +142,12 @@ impl Book {
             self.bids
                 .values()
                 .flatten()
-                .filter(|order| !order.amount_left.is_zero())
+                .filter(|order| !order.remaining.is_zero())
                 .count(),
             self.asks
                 .values()
                 .flatten()
-                .filter(|order| !order.amount_left.is_zero())
+                .filter(|order| !order.remaining.is_zero())
                 .count(),
         )
     }
@@ -194,7 +194,7 @@ impl Book {
                 OrderSide::Bid => &mut self.asks,
                 OrderSide::Ask => &mut self.bids,
             };
-        let mut running_total: U256 = order.amount_left;
+        let mut running_total: U256 = order.remaining;
         let mut done: bool = false;
 
         /* if we haven't crossed the spread, we're not going to match */
@@ -223,16 +223,16 @@ impl Book {
 
             for opposite in opposites {
                 /* no self-trading allowed */
-                if opposite.user == order.user {
+                if opposite.trader == order.trader {
                     debug!("Self-trade, skipping...");
                     continue;
                 }
 
                 /* determine how much to match */
                 let amount: U256 =
-                    match opposite.amount_left.cmp(&order.amount_left) {
-                        Ordering::Greater => order.amount_left,
-                        _ => opposite.amount_left,
+                    match opposite.remaining.cmp(&order.remaining) {
+                        Ordering::Greater => order.remaining,
+                        _ => opposite.remaining,
                     };
                 debug!("Matching with amount of {}...", amount);
 
@@ -273,16 +273,16 @@ impl Book {
 
     fn fill(order: Order, amount: U256) -> Order {
         debug!("Filling {} of {}...", amount, order);
-        match amount.cmp(&order.amount_left) {
+        match amount.cmp(&order.remaining) {
             Ordering::Greater => order,
             _ => Order {
                 id: order.id,
-                user: order.user,
-                target_tracer: order.target_tracer,
+                trader: order.trader,
+                market: order.market,
                 side: order.side,
                 price: order.price,
-                amount: order.amount,
-                amount_left: order.amount_left - amount,
+                quantity: order.quantity,
+                remaining: order.remaining - amount,
                 expiration: order.expiration,
                 created: order.created,
                 signed_data: order.signed_data,
@@ -292,11 +292,11 @@ impl Book {
 
     fn prune(&mut self) {
         for (_price, orders) in self.bids.iter_mut() {
-            orders.retain(|order| !order.amount_left.is_zero());
+            orders.retain(|order| !order.remaining.is_zero());
         }
 
         for (_price, orders) in self.asks.iter_mut() {
-            orders.retain(|order| !order.amount_left.is_zero());
+            orders.retain(|order| !order.remaining.is_zero());
         }
 
         self.bids.retain(|_price, orders| !orders.is_empty());
@@ -407,5 +407,53 @@ impl Book {
         self.prune();
         self.depth = self.depth();
         debug!("Updated book metadata");
+    }
+}
+
+pub struct ExternalBook {
+    pub market: String, /* the address of the Tracer market */
+    pub bids: BTreeMap<String, VecDeque<ExternalOrder>>, /* buy-side */
+    pub asks: BTreeMap<String, VecDeque<ExternalOrder>>, /* sell-side */
+    pub ltp: String,    /* last traded price */
+    pub depth: (usize, usize), /* depth  */
+    pub crossed: bool,  /* is book crossed? */
+    pub spread: String, /* bid-ask spread */
+}
+
+impl From<Book> for ExternalBook {
+    fn from(value: Book) -> Self {
+        Self {
+            market: value.market.to_string(),
+            bids: value
+                .bids
+                .iter()
+                .map(|(price, orders)| {
+                    (
+                        price.to_string(),
+                        orders
+                            .iter()
+                            .map(|order| ExternalOrder::from(order.clone()))
+                            .collect(),
+                    )
+                })
+                .collect(),
+            asks: value
+                .asks
+                .iter()
+                .map(|(price, orders)| {
+                    (
+                        price.to_string(),
+                        orders
+                            .iter()
+                            .map(|order| ExternalOrder::from(order.clone()))
+                            .collect(),
+                    )
+                })
+                .collect(),
+            ltp: value.ltp.to_string(),
+            depth: value.depth,
+            crossed: value.crossed,
+            spread: value.spread.to_string(),
+        }
     }
 }
