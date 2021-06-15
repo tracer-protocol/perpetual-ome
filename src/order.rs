@@ -57,15 +57,11 @@ pub struct Order {
     pub user: Address,          /* Ethereum address of trader */
     pub target_tracer: Address, /* Ethereum address of the Tracer smart contract */
     pub side: OrderSide,        /* side of the market of the order */
-    #[serde(serialize_with = "from_hex_se", deserialize_with = "from_hex_de")]
+    #[serde(serialize_with = "from_hex_se")]
     pub price: U256, /* price */
-    #[serde(serialize_with = "from_hex_se", deserialize_with = "from_hex_de")]
+    #[serde(serialize_with = "from_hex_se")]
     pub amount: U256, /* quantity */
-    #[serde(
-        serialize_with = "from_hex_se",
-        deserialize_with = "from_hex_de",
-        skip_deserializing
-    )]
+    #[serde(serialize_with = "from_hex_se", skip_deserializing)]
     pub amount_left: U256,
     #[serde(with = "ts_seconds")]
     pub expiration: DateTime<Utc>, /* expiration of the order */
