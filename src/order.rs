@@ -147,7 +147,7 @@ impl Order {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct ExternalOrder {
     pub id: String,
     pub user: String,

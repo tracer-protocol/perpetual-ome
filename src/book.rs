@@ -410,6 +410,7 @@ impl Book {
     }
 }
 
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct ExternalBook {
     pub market: String, /* the address of the Tracer market */
     pub bids: BTreeMap<String, VecDeque<ExternalOrder>>, /* buy-side */

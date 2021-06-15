@@ -11,7 +11,7 @@ use warp::http;
 use warp::reply::json;
 use warp::{Rejection, Reply};
 
-use crate::book::Book;
+use crate::book::{Book, ExternalBook};
 use crate::order::{ExternalOrder, Order, OrderId, OrderSide};
 use crate::rpc;
 use crate::state::OmeState;
@@ -127,7 +127,9 @@ pub async fn read_book_handler(
     state: Arc<Mutex<OmeState>>,
 ) -> Result<impl Reply, Rejection> {
     let ome_state: MutexGuard<OmeState> = state.lock().await;
-    Ok(json(&ome_state.book(market)))
+    let book: Book = ome_state.book(market).unwrap().clone();
+    let payload: ExternalBook = ExternalBook::from(book);
+    Ok(json(&payload))
 }
 
 /// REST API route handler for creating a single order
