@@ -76,7 +76,10 @@ pub type UpdateOrderRequest = CreateOrderRequest;
 
 /// HEALTH POINT HANDLER
 pub async fn health_check_handler() -> Result<impl Reply, Infallible> {
-    Ok(warp::reply::with_status("", http::StatusCode::OK))
+    Ok(warp::reply::with_status(
+        warp::reply::json(&()),
+        http::StatusCode::OK,
+    ))
 }
 
 /// REST API route handler for listing all order books
@@ -110,7 +113,7 @@ pub async fn create_book_handler(
     /* check if the market already exists and, if so, return HTTP 409 */
     if ome_state.book(market).is_some() {
         return Ok(warp::reply::with_status(
-            "Market already exists",
+            warp::reply::json(&"Market already exists".to_string()),
             http::StatusCode::CONFLICT,
         ));
     }
@@ -122,7 +125,7 @@ pub async fn create_book_handler(
 
     /* indicate success to the caller */
     Ok(warp::reply::with_status(
-        "Created new market",
+        warp::reply::json(&"Created new market".to_string()),
         http::StatusCode::CREATED,
     ))
 }
@@ -148,7 +151,7 @@ pub async fn create_order_handler(
         || request.amount > U256::from(u128::MAX)
     {
         return Ok(warp::reply::with_status(
-            "Integers out of bounds".to_string(),
+            warp::reply::json(&"Integers out of bounds".to_string()),
             http::StatusCode::BAD_REQUEST,
         ));
     }
@@ -169,7 +172,7 @@ pub async fn create_order_handler(
 
     if !valid_order {
         return Ok(warp::reply::with_status(
-            "Invalid order".to_string(),
+            warp::reply::json(&"Invalid order".to_string()),
             http::StatusCode::BAD_REQUEST,
         ));
     }
@@ -186,7 +189,7 @@ pub async fn create_order_handler(
                 new_order
             );
             return Ok(warp::reply::with_status(
-                "Market does not exist".to_string(),
+                warp::reply::json(&"Market does not exist".to_string()),
                 http::StatusCode::NOT_FOUND,
             ));
         }
@@ -199,14 +202,14 @@ pub async fn create_order_handler(
         Ok(order_status) => {
             info!("Created order {}", tmp_order);
             Ok(warp::reply::with_status(
-                order_status.to_string(),
+                warp::reply::json(&order_status.to_string()),
                 http::StatusCode::OK,
             ))
         }
         Err(e) => {
             warn!("Failed to create order {}! Engine said: {}", tmp_order, e);
             Ok(warp::reply::with_status(
-                "".to_string(),
+                warp::reply::json(&"Matching error occurred".to_string()),
                 http::StatusCode::INTERNAL_SERVER_ERROR,
             ))
         }
@@ -226,7 +229,7 @@ pub async fn read_order_handler(
         Some(b) => b,
         None => {
             return Ok(warp::reply::with_status(
-                "Market does not exist",
+                warp::reply::json(&"Market does not exist".to_string()),
                 http::StatusCode::NOT_FOUND,
             )
             .into_response());
@@ -238,7 +241,9 @@ pub async fn read_order_handler(
         Some(o) => o,
         None => {
             return Ok(warp::reply::with_status(
-                "Order does not exist in market",
+                warp::reply::json(
+                    &"Order does not exist in market".to_string(),
+                ),
                 http::StatusCode::NOT_FOUND,
             )
             .into_response());
@@ -266,7 +271,7 @@ pub async fn update_order_handler(
         Some(b) => b,
         None => {
             return Ok(warp::reply::with_status(
-                "Market does not exist",
+                warp::reply::json(&"Market does not exist".to_string()),
                 http::StatusCode::NOT_FOUND,
             )
             .into_response());
@@ -278,7 +283,9 @@ pub async fn update_order_handler(
         Some(o) => o,
         None => {
             return Ok(warp::reply::with_status(
-                "Order does not exist in market",
+                warp::reply::json(
+                    &"Order does not exist in market".to_string(),
+                ),
                 http::StatusCode::NOT_FOUND,
             )
             .into_response());
@@ -289,7 +296,10 @@ pub async fn update_order_handler(
     *order.amount_mut() = request.amount;
     *order.expiration_mut() = request.expiration;
 
-    Ok(warp::reply::with_status("", http::StatusCode::OK).into_response())
+    Ok(
+        warp::reply::with_status(warp::reply::json(&()), http::StatusCode::OK)
+            .into_response(),
+    )
 }
 
 /// REST API route handler for deleting a single order
@@ -307,7 +317,7 @@ pub async fn destroy_order_handler(
         Some(b) => b,
         None => {
             return Ok(warp::reply::with_status(
-                "Market does not exist",
+                warp::reply::json(&"Market does not exist".to_string()),
                 http::StatusCode::NOT_FOUND,
             )
             .into_response());
@@ -319,14 +329,19 @@ pub async fn destroy_order_handler(
         Ok(_t) => {}
         Err(_e) => {
             return Ok(warp::reply::with_status(
-                "Order does not exist in market",
+                warp::reply::json(
+                    &"Order does not exist in market".to_string(),
+                ),
                 http::StatusCode::NOT_FOUND,
             )
             .into_response());
         }
     };
 
-    Ok(warp::reply::with_status("", http::StatusCode::OK).into_response())
+    Ok(
+        warp::reply::with_status(warp::reply::json(&()), http::StatusCode::OK)
+            .into_response(),
+    )
 }
 
 #[allow(clippy::into_iter_on_ref)]
@@ -342,7 +357,7 @@ pub async fn market_user_orders_handler(
         Some(b) => b,
         None => {
             return Ok(warp::reply::with_status(
-                "Market does not exist",
+                warp::reply::json(&"Market does not exist".to_string()),
                 http::StatusCode::NOT_FOUND,
             )
             .into_response());
