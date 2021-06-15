@@ -156,3 +156,34 @@ impl Order {
         &mut self.expiration
     }
 }
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+struct ExternalOrder {
+    pub id: String,
+    pub user: String,
+    pub target_tracer: String,
+    pub side: String,
+    pub price: String,
+    pub amount: String,
+    pub amount_left: String,
+    pub expiration: String,
+    pub created: String,
+    pub signed_data: String,
+}
+
+impl From<Order> for ExternalOrder {
+    fn from(value: Order) -> Self {
+        Self {
+            id: value.id.to_string(),
+            user: value.user.to_string(),
+            target_tracer: value.target_tracer.to_string(),
+            side: value.side.to_string(),
+            price: value.price.to_string(),
+            amount: value.amount.to_string(),
+            amount_left: value.amount_left.to_string(),
+            expiration: value.expiration.timestamp().to_string(),
+            created: value.created.timestamp().to_string(),
+            signed_data: "0x".to_string() + &hex::encode(value.signed_data),
+        }
+    }
+}
