@@ -5,7 +5,6 @@ use std::fmt::{Display, Formatter};
 use std::num::ParseIntError;
 use std::str::FromStr;
 
-use chrono::serde::ts_seconds;
 use chrono::{DateTime, ParseError, Utc};
 use derive_more::Display;
 use hex::FromHexError;
@@ -92,25 +91,25 @@ impl Display for OrderParseError {
 }
 
 impl From<FromHexError> for OrderParseError {
-    fn from(value: FromHexError) -> Self {
+    fn from(_value: FromHexError) -> Self {
         OrderParseError::InvalidHexadecimal
     }
 }
 
 impl From<rustc_hex::FromHexError> for OrderParseError {
-    fn from(value: rustc_hex::FromHexError) -> Self {
+    fn from(_value: rustc_hex::FromHexError) -> Self {
         OrderParseError::InvalidHexadecimal
     }
 }
 
 impl From<ParseError> for OrderParseError {
-    fn from(value: ParseError) -> Self {
+    fn from(_value: ParseError) -> Self {
         OrderParseError::InvalidTimestamp
     }
 }
 
 impl From<ParseIntError> for OrderParseError {
-    fn from(value: ParseIntError) -> Self {
+    fn from(_value: ParseIntError) -> Self {
         OrderParseError::IntegerBounds
     }
 }
