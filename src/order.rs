@@ -4,9 +4,11 @@ use std::fmt;
 use chrono::serde::ts_seconds;
 use chrono::{DateTime, Utc};
 use derive_more::Display;
+use ethabi::{encode, Token};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
-use web3::types::{Address, U256};
+use web3::signing::keccak256;
+use web3::types::{Address, H256, U256};
 
 use crate::util::{from_hex_de, from_hex_se};
 
@@ -20,7 +22,7 @@ pub const DOMAIN_HASH: &str =
 /// Magic number prefix for EIP712
 pub const EIP712_MAGIC_PREFIX: &str = "1901";
 
-pub type OrderId = u64;
+pub type OrderId = H256;
 
 /// Represents which side of the market an order is on
 ///
@@ -53,7 +55,7 @@ impl OrderSide {
 /// Comprises a struct with all order fields needed for the Tracer market.
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct Order {
-    pub id: u64,                /* SHA3-256 hash of other fields */
+    pub id: OrderId,            /* SHA3-256 hash of other fields */
     pub user: Address,          /* Ethereum address of trader */
     pub target_tracer: Address, /* Ethereum address of the Tracer smart contract */
     pub side: OrderSide,        /* side of the market of the order */
@@ -93,6 +95,36 @@ impl fmt::Display for Order {
 #[derive(Clone, Copy, Debug, Error, Serialize, Deserialize)]
 pub enum OrderParseError {/* TODO: add specific errors here */}
 
+pub fn order_id(
+    user: Address,
+    target_tracer: Address,
+    side: OrderSide,
+    price: U256,
+    amount: U256,
+    expiration: DateTime<Utc>,
+    created: DateTime<Utc>,
+) -> OrderId {
+    /* handle indirect conversions */
+    let side_num: U256 = U256::from(match side {
+        OrderSide::Bid => 0u8,
+        OrderSide::Ask => 1u8,
+    });
+    let expiration_timestamp: U256 = U256::from(expiration.timestamp());
+    let created_timestamp: U256 = U256::from(created.timestamp());
+
+    let components: Vec<Token> = vec![
+        Token::Address(user),
+        Token::Address(target_tracer),
+        Token::Uint(price),
+        Token::Uint(amount),
+        Token::Uint(side_num),
+        Token::Uint(expiration_timestamp),
+        Token::Uint(created_timestamp),
+    ];
+
+    web3::signing::keccak256(&ethabi::encode(&components)).into()
+}
+
 impl Order {
     /// Constructor for the `Order` type
     ///
@@ -109,7 +141,15 @@ impl Order {
         created: DateTime<Utc>,
         signed_data: Vec<u8>,
     ) -> Self {
-        let id: OrderId = 0; /* TODO: determine how IDs are to be generated */
+        let id: OrderId = order_id(
+            user,
+            target_tracer,
+            side,
+            price,
+            amount,
+            expiration,
+            created,
+        );
 
         Self {
             id,
@@ -126,7 +166,7 @@ impl Order {
     }
 
     /// Returns a mutable reference to the unique identifier of this order
-    pub fn id_mut(&mut self) -> &mut u64 {
+    pub fn id_mut(&mut self) -> &mut OrderId {
         &mut self.id
     }
 
