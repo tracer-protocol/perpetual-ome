@@ -1,24 +1,17 @@
 //! Contains logic and type definitions for orders
 use std::fmt;
+use std::fmt::{Display, Formatter};
+use std::convert::TryFrom;
+use std::str::FromStr;
+use std::num::ParseIntError;
 
 use chrono::serde::ts_seconds;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Utc, ParseError};
 use derive_more::Display;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use web3::types::{Address, U256};
-
-use crate::util::from_hex_de;
-
-/// Magic string representing the function signature
-pub const FUNCTION_SIGNATURE: &str = "LimitOrder(uint256 amount,uint256 price,bool side,address user,uint256 expiration,address target_tracer)";
-
-/// Magic pre-computed hash of the EIP712 domain prefix
-pub const DOMAIN_HASH: &str =
-    "49854490ba36fba358fe1019f097d8b566d011cfb3fd67c6fce6a40624150034";
-
-/// Magic number prefix for EIP712
-pub const EIP712_MAGIC_PREFIX: &str = "1901";
+use hex::FromHexError;
 
 pub type OrderId = u64;
 
@@ -35,17 +28,16 @@ pub enum OrderSide {
     Ask,
 }
 
-impl OrderSide {
-    /// Returns a byte slice of the market side
-    ///
-    /// This is simply one byte long as there will only ever be two market sides
-    /// (realistically)
-    pub fn as_bytes(&self) -> &[u8] {
-        match self {
-            OrderSide::Bid => &[0x00],
-            OrderSide::Ask => &[0x01],
+impl FromStr for OrderSide {
+    type Err = OrderParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "Bid" | "bid" | "BID" => Ok(OrderSide::Bid),
+            "Ask" | "ask" | "ASK" => Ok(OrderSide::Ask),
+            _ => Err(OrderParseError::InvalidSide)
         }
-    }
+    }    
 }
 
 /// Represents an actual order in the market
@@ -53,21 +45,16 @@ impl OrderSide {
 /// Comprises a struct with all order fields needed for the Tracer market.
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct Order {
-    pub id: u64,                /* SHA3-256 hash of other fields */
-    pub user: Address,          /* Ethereum address of trader */
-    pub target_tracer: Address, /* Ethereum address of the Tracer smart contract */
-    pub side: OrderSide,        /* side of the market of the order */
-    #[serde(deserialize_with = "from_hex_de")]
-    pub price: U256, /* price */
-    #[serde(deserialize_with = "from_hex_de")]
-    pub amount: U256, /* quantity */
-    #[serde(skip_deserializing)]
-    pub amount_left: U256,
-    #[serde(with = "ts_seconds")]
-    pub expiration: DateTime<Utc>, /* expiration of the order */
-    #[serde(with = "ts_seconds")]
-    pub created: DateTime<Utc>, /* creation time of the order */
-    pub signed_data: Vec<u8>, /* digital signature of the order */
+    pub id: OrderId,
+    pub trader: Address,
+    pub market: Address, 
+    pub side: OrderSide, 
+    pub price: U256, 
+    pub quantity: U256, 
+    pub remaining: U256,
+    pub expiration: DateTime<Utc>, 
+    pub created: DateTime<Utc>,
+    pub signed_data: Vec<u8>,
 }
 
 impl fmt::Display for Order {
@@ -76,18 +63,57 @@ impl fmt::Display for Order {
             f,
             "<ID:{} Market: {} Side: {} Price: {} Quantity: {} Remaining: {}>",
             self.id,
-            self.target_tracer,
+            self.market,
             self.side,
             self.price,
-            self.amount,
-            self.amount_left
+            self.quantity,
+            self.remaining
         )
     }
 }
 
 /// Represents an error in interpreting a byte-level representation of an order
 #[derive(Clone, Copy, Debug, Error, Serialize, Deserialize)]
-pub enum OrderParseError {/* TODO: add specific errors here */}
+pub enum OrderParseError {
+    InvalidHexadecimal,
+    InvalidSide,
+    InvalidTimestamp,
+    IntegerBounds,
+}
+
+impl Display for OrderParseError {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match self {
+            Self::InvalidHexadecimal => write!(f, "Invalid hexadecimal"),
+            Self::InvalidSide => write!(f, "Invalid side"),
+            _ => write!(f, "Unknown")
+        }
+    }    
+}
+
+impl From<FromHexError> for OrderParseError {
+    fn from(value: FromHexError) -> Self {
+        OrderParseError::InvalidHexadecimal
+    }    
+}
+
+impl From<rustc_hex::FromHexError> for OrderParseError {
+    fn from(value: rustc_hex::FromHexError) -> Self {
+        OrderParseError::InvalidHexadecimal
+    }    
+}
+
+impl From<ParseError> for OrderParseError {
+    fn from(value: ParseError) -> Self {
+        OrderParseError::InvalidTimestamp
+    }
+}
+
+impl From<ParseIntError> for OrderParseError {
+    fn from(value: ParseIntError) -> Self {
+        OrderParseError::IntegerBounds
+    }
+}
 
 impl Order {
     /// Constructor for the `Order` type
@@ -96,11 +122,11 @@ impl Order {
     /// and populates an `Order` struct.
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        user: Address,
-        target_tracer: Address,
+        trader: Address,
+        market: Address,
         side: OrderSide,
         price: U256,
-        amount: U256,
+        quantity: U256,
         expiration: DateTime<Utc>,
         created: DateTime<Utc>,
         signed_data: Vec<u8>,
@@ -109,56 +135,21 @@ impl Order {
 
         Self {
             id,
-            user,
-            target_tracer,
+            trader,
+            market,
             side,
             price,
-            amount,
-            amount_left: amount,
+            quantity,
+            remaining: quantity,
             expiration,
             created,
             signed_data,
         }
     }
-
-    /// Returns a mutable reference to the unique identifier of this order
-    pub fn id_mut(&mut self) -> &mut u64 {
-        &mut self.id
-    }
-
-    /// Returns a mutable reference to the address of the owner of this order
-    pub fn address_mut(&mut self) -> &mut Address {
-        &mut self.user
-    }
-
-    /// Returns a mutable reference to the address of the market of this order
-    pub fn market_mut(&mut self) -> &mut Address {
-        &mut self.target_tracer
-    }
-
-    /// Returns a mutable reference to the market side of this order
-    pub fn side_mut(&mut self) -> &mut OrderSide {
-        &mut self.side
-    }
-
-    /// Returns a mutable reference to the price of this order
-    pub fn price_mut(&mut self) -> &mut U256 {
-        &mut self.price
-    }
-
-    /// Returns a mutable reference to the quantity of this order
-    pub fn amount_mut(&mut self) -> &mut U256 {
-        &mut self.amount
-    }
-
-    /// Returns a mutable reference to the expiration of this order
-    pub fn expiration_mut(&mut self) -> &mut DateTime<Utc> {
-        &mut self.expiration
-    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-struct ExternalOrder {
+pub struct ExternalOrder {
     pub id: String,
     pub user: String,
     pub target_tracer: String,
@@ -175,15 +166,85 @@ impl From<Order> for ExternalOrder {
     fn from(value: Order) -> Self {
         Self {
             id: value.id.to_string(),
-            user: value.user.to_string(),
-            target_tracer: value.target_tracer.to_string(),
+            user: value.trader.to_string(),
+            target_tracer: value.market.to_string(),
             side: value.side.to_string(),
             price: value.price.to_string(),
-            amount: value.amount.to_string(),
-            amount_left: value.amount_left.to_string(),
+            amount: value.quantity.to_string(),
+            amount_left: value.remaining.to_string(),
             expiration: value.expiration.timestamp().to_string(),
             created: value.created.timestamp().to_string(),
             signed_data: "0x".to_string() + &hex::encode(value.signed_data),
         }
+    }
+}
+
+impl TryFrom<ExternalOrder> for Order {
+    type Error = OrderParseError;
+
+    fn try_from(value: ExternalOrder) -> Result<Self, Self::Error> {
+        let id: OrderId = match OrderId::from_str(&value.id) {
+            Ok(t) => t,
+            Err(e) => return Err(e.into()),
+        };
+
+        let trader: Address = match Address::from_str(&value.user) {
+            Ok(t) => t,
+            Err(e) => return Err(e.into()),
+        };
+
+        let market: Address = match Address::from_str(&value.target_tracer) {
+            Ok(t) => t,
+            Err(e) => return Err(e.into()),
+        };
+
+        let side: OrderSide = match OrderSide::from_str(&value.side) {
+            Ok(t) => t,
+            Err(e) => return Err(e.into()),
+        };
+
+        let price: U256 = match U256::from_str(&value.price) {
+            Ok(t) => t,
+            Err(e) => return Err(e.into()),
+        };
+
+        let quantity: U256 = match U256::from_str(&value.amount) {
+            Ok(t) => t,
+            Err(e) => return Err(e.into()),
+        };
+
+        let remaining: U256 = match U256::from_str(&value.amount_left) {
+            Ok(t) => t,
+            Err(e) => return Err(e.into()),
+        };
+
+        let expiration: DateTime<Utc> =
+            match DateTime::from_str(&value.expiration) {
+                Ok(t) => t,
+                Err(e) => return Err(e.into()),
+            };
+
+            let created: DateTime<Utc> = match DateTime::from_str(&value.created) {
+            Ok(t) => t,
+            Err(e) => return Err(e.into()),
+        };
+
+        let signed_data: Vec<u8> = match hex::decode(&value.signed_data) {
+            Ok(t) => t,
+            Err(e) => return Err(e.into()),
+        };
+
+        Ok(Self {
+            id,
+            trader,
+            market,
+            side,
+            price,
+            quantity,
+            remaining,
+            expiration,
+            created,
+            signed_data,
+        })
     }
 }
