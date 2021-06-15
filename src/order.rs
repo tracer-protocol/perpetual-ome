@@ -1,17 +1,17 @@
 //! Contains logic and type definitions for orders
+use std::convert::TryFrom;
 use std::fmt;
 use std::fmt::{Display, Formatter};
-use std::convert::TryFrom;
-use std::str::FromStr;
 use std::num::ParseIntError;
+use std::str::FromStr;
 
 use chrono::serde::ts_seconds;
-use chrono::{DateTime, Utc, ParseError};
+use chrono::{DateTime, ParseError, Utc};
 use derive_more::Display;
+use hex::FromHexError;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use web3::types::{Address, U256};
-use hex::FromHexError;
 
 pub type OrderId = u64;
 
@@ -35,9 +35,9 @@ impl FromStr for OrderSide {
         match s {
             "Bid" | "bid" | "BID" => Ok(OrderSide::Bid),
             "Ask" | "ask" | "ASK" => Ok(OrderSide::Ask),
-            _ => Err(OrderParseError::InvalidSide)
+            _ => Err(OrderParseError::InvalidSide),
         }
-    }    
+    }
 }
 
 /// Represents an actual order in the market
@@ -47,12 +47,12 @@ impl FromStr for OrderSide {
 pub struct Order {
     pub id: OrderId,
     pub trader: Address,
-    pub market: Address, 
-    pub side: OrderSide, 
-    pub price: U256, 
-    pub quantity: U256, 
+    pub market: Address,
+    pub side: OrderSide,
+    pub price: U256,
+    pub quantity: U256,
     pub remaining: U256,
-    pub expiration: DateTime<Utc>, 
+    pub expiration: DateTime<Utc>,
     pub created: DateTime<Utc>,
     pub signed_data: Vec<u8>,
 }
@@ -86,21 +86,21 @@ impl Display for OrderParseError {
         match self {
             Self::InvalidHexadecimal => write!(f, "Invalid hexadecimal"),
             Self::InvalidSide => write!(f, "Invalid side"),
-            _ => write!(f, "Unknown")
+            _ => write!(f, "Unknown"),
         }
-    }    
+    }
 }
 
 impl From<FromHexError> for OrderParseError {
     fn from(value: FromHexError) -> Self {
         OrderParseError::InvalidHexadecimal
-    }    
+    }
 }
 
 impl From<rustc_hex::FromHexError> for OrderParseError {
     fn from(value: rustc_hex::FromHexError) -> Self {
         OrderParseError::InvalidHexadecimal
-    }    
+    }
 }
 
 impl From<ParseError> for OrderParseError {
@@ -224,7 +224,7 @@ impl TryFrom<ExternalOrder> for Order {
                 Err(e) => return Err(e.into()),
             };
 
-            let created: DateTime<Utc> = match DateTime::from_str(&value.created) {
+        let created: DateTime<Utc> = match DateTime::from_str(&value.created) {
             Ok(t) => t,
             Err(e) => return Err(e.into()),
         };

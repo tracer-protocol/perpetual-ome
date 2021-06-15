@@ -12,7 +12,7 @@ use warp::reply::json;
 use warp::{Rejection, Reply};
 
 use crate::book::Book;
-use crate::order::{Order, OrderId, OrderSide, ExternalOrder};
+use crate::order::{ExternalOrder, Order, OrderId, OrderSide};
 use crate::rpc;
 use crate::state::OmeState;
 use crate::util::{from_hex_de, from_hex_se};
@@ -347,7 +347,7 @@ pub async fn market_user_orders_handler(
         .bids
         .values()
         .into_iter()
-        .flat_map(|levels| levels.into_iter().filter(|o| o.trader== user))
+        .flat_map(|levels| levels.into_iter().filter(|o| o.trader == user))
         .cloned()
         .collect();
 
