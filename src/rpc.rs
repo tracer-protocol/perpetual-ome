@@ -28,8 +28,8 @@ impl From<rustc_hex::FromHexError> for RpcError {
 
 #[derive(Serialize, Deserialize)]
 pub struct MatchRequest {
-    maker: Order,
-    taker: Order,
+    maker: ExternalOrder,
+    taker: ExternalOrder,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -79,7 +79,10 @@ pub async fn send_matched_orders(
         maker, taker, address
     );
 
-    let payload: MatchRequest = MatchRequest { maker, taker };
+    let payload: MatchRequest = MatchRequest {
+        maker: maker.into(),
+        taker: taker.into(),
+    };
     let client: Client = Client::new();
     let endpoint: String = address.clone() + "/submit";
 
