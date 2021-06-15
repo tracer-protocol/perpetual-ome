@@ -4,7 +4,6 @@ use std::{
     cmp::Ordering,
     collections::{BTreeMap, VecDeque},
     fmt::Display,
-    iter::FromIterator,
 };
 
 use chrono::{DateTime, Utc};
@@ -425,8 +424,10 @@ impl From<Book> for ExternalBook {
     fn from(value: Book) -> Self {
         Self {
             market: value.market.to_string(),
-            bids: BTreeMap::from_iter(value.bids.iter().map(
-                |(price, orders)| {
+            bids: value
+                .bids
+                .iter()
+                .map(|(price, orders)| {
                     (
                         price.to_string(),
                         orders
@@ -434,10 +435,12 @@ impl From<Book> for ExternalBook {
                             .map(|order| ExternalOrder::from(order.clone()))
                             .collect(),
                     )
-                },
-            )),
-            asks: BTreeMap::from_iter(value.asks.iter().map(
-                |(price, orders)| {
+                })
+                .collect(),
+            asks: value
+                .asks
+                .iter()
+                .map(|(price, orders)| {
                     (
                         price.to_string(),
                         orders
@@ -445,8 +448,8 @@ impl From<Book> for ExternalBook {
                             .map(|order| ExternalOrder::from(order.clone()))
                             .collect(),
                     )
-                },
-            )),
+                })
+                .collect(),
             ltp: value.ltp.to_string(),
             depth: value.depth,
             crossed: value.crossed,

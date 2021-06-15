@@ -201,7 +201,7 @@ impl TryFrom<ExternalOrder> for Order {
 
         let side: OrderSide = match OrderSide::from_str(&value.side) {
             Ok(t) => t,
-            Err(e) => return Err(e.into()),
+            Err(e) => return Err(e),
         };
 
         let price: U256 = match U256::from_str(&value.price) {

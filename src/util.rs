@@ -39,7 +39,7 @@ where
     let s: String = Deserialize::deserialize(deserializer)?;
     U256::from_dec_str(&s).map_err(|_e| {
         D::Error::invalid_type(
-            Unexpected::Other(&"non-decimal string"),
+            Unexpected::Other("non-decimal string"),
             &"decimal string",
         )
     })
