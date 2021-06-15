@@ -5,7 +5,7 @@ use reqwest::{header, Client, Response};
 use serde::{Deserialize, Serialize};
 use web3::types::H160;
 
-use crate::order::Order;
+use crate::order::{ExternalOrder, Order};
 
 #[derive(Display, Debug)]
 pub enum RpcError {
@@ -34,7 +34,7 @@ pub struct MatchRequest {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CheckRequest {
-    order: Order,
+    order: ExternalOrder,
 }
 
 #[allow(unused_must_use)]
@@ -45,7 +45,7 @@ pub async fn check_order_validity(
     let endpoint: String = address + "/check";
     let client: Client = Client::new();
     let payload: CheckRequest = CheckRequest {
-        order: order.clone(),
+        order: ExternalOrder::from(order.clone()),
     };
 
     info!(

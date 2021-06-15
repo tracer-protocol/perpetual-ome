@@ -163,10 +163,12 @@ pub struct ExternalOrder {
 
 impl From<Order> for ExternalOrder {
     fn from(value: Order) -> Self {
+        let trader_bytes: Vec<u8> = value.trader.as_ref().to_vec();
+        let market_bytes: Vec<u8> = value.market.as_ref().to_vec();
         Self {
             id: value.id.to_string(),
-            user: value.trader.to_string(),
-            target_tracer: value.market.to_string(),
+            user: "0x".to_string() + &hex::encode(&trader_bytes),
+            target_tracer: "0x".to_string() + &hex::encode(&market_bytes),
             side: value.side.to_string(),
             price: value.price.to_string(),
             amount: value.quantity.to_string(),

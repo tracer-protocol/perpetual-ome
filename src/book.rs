@@ -4,6 +4,7 @@ use std::{
     cmp::Ordering,
     collections::{BTreeMap, VecDeque},
     fmt::Display,
+    iter::FromIterator,
 };
 
 use chrono::{DateTime, Utc};
@@ -13,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use web3::types::Address;
 
-use crate::order::{Order, OrderId, OrderSide};
+use crate::order::{ExternalOrder, Order, OrderId, OrderSide};
 use crate::rpc;
 use crate::util::{from_hex_de, from_hex_se};
 
@@ -407,5 +408,49 @@ impl Book {
         self.prune();
         self.depth = self.depth();
         debug!("Updated book metadata");
+    }
+}
+
+pub struct ExternalBook {
+    pub market: String, /* the address of the Tracer market */
+    pub bids: BTreeMap<String, VecDeque<ExternalOrder>>, /* buy-side */
+    pub asks: BTreeMap<String, VecDeque<ExternalOrder>>, /* sell-side */
+    pub ltp: String,    /* last traded price */
+    pub depth: (usize, usize), /* depth  */
+    pub crossed: bool,  /* is book crossed? */
+    pub spread: String, /* bid-ask spread */
+}
+
+impl From<Book> for ExternalBook {
+    fn from(value: Book) -> Self {
+        Self {
+            market: value.market.to_string(),
+            bids: BTreeMap::from_iter(value.bids.iter().map(
+                |(price, orders)| {
+                    (
+                        price.to_string(),
+                        orders
+                            .iter()
+                            .map(|order| ExternalOrder::from(order.clone()))
+                            .collect(),
+                    )
+                },
+            )),
+            asks: BTreeMap::from_iter(value.asks.iter().map(
+                |(price, orders)| {
+                    (
+                        price.to_string(),
+                        orders
+                            .iter()
+                            .map(|order| ExternalOrder::from(order.clone()))
+                            .collect(),
+                    )
+                },
+            )),
+            ltp: value.ltp.to_string(),
+            depth: value.depth,
+            crossed: value.crossed,
+            spread: value.spread.to_string(),
+        }
     }
 }
