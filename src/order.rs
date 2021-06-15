@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use web3::types::{Address, U256};
 
-use crate::util::{from_hex_de, from_hex_se};
+use crate::util::from_hex_de;
 
 /// Magic string representing the function signature
 pub const FUNCTION_SIGNATURE: &str = "LimitOrder(uint256 amount,uint256 price,bool side,address user,uint256 expiration,address target_tracer)";
