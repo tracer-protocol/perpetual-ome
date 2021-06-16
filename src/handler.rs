@@ -163,7 +163,7 @@ pub async fn create_order_handler(
 
     let new_order: ExternalOrder = ExternalOrder::from(request);
 
-    let internal_order: Order = match Order::try_from(new_order) {
+    let internal_order: Order = match Order::try_from(new_order.clone()) {
         Ok(t) => t,
         Err(e) => {
             return Ok(warp::reply::with_status(
@@ -208,7 +208,10 @@ pub async fn create_order_handler(
     };
 
     /* submit order to the engine for matching */
-    match book.submit(internal_order.clone(), rpc_endpoint).await {
+    match book
+        .submit(Order::try_from(new_order.clone()).unwrap(), rpc_endpoint)
+        .await
+    {
         Ok(order_status) => {
             info!("Created order {}", internal_order.clone());
             Ok(warp::reply::with_status(

@@ -221,7 +221,10 @@ impl TryFrom<ExternalOrder> for Order {
         let mut id_exists: bool = true;
 
         let mut id: OrderId = match value.id.len() {
-            0 => {id_exists = false; OrderId::zero()},
+            0 => {
+                id_exists = false;
+                OrderId::zero()
+            }
             _ => match OrderId::from_str(&value.id) {
                 Ok(t) => t,
                 Err(e) => return Err(e.into()),
@@ -282,7 +285,9 @@ impl TryFrom<ExternalOrder> for Order {
         };
 
         if !id_exists {
-            id = order_id(trader, market, side, price, quantity, expiration, created);
+            id = order_id(
+                trader, market, side, price, quantity, expiration, created,
+            );
         }
 
         Ok(Self {
