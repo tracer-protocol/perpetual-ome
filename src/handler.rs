@@ -176,7 +176,7 @@ pub async fn create_order_handler(
     info!("Creating order {}...", internal_order.clone());
 
     let valid_order: bool = match rpc::check_order_validity(
-        internal_order.clone(),
+        Order::try_from(new_order.clone()).unwrap(),
         rpc_endpoint.clone(),
     )
     .await
