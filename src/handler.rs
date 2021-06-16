@@ -52,9 +52,8 @@ impl From<CreateOrderRequest> for ExternalOrder {
         let created: DateTime<Utc> = value.created;
         let signed_data: String = value.signed_data;
 
-        let user_bytes: Vec<u8> = value.user.as_ref().to_vec();
-        let target_tracer_bytes: Vec<u8> =
-            value.target_tracer.as_ref().to_vec();
+        let user_bytes: Vec<u8> = user.as_ref().to_vec();
+        let target_tracer_bytes: Vec<u8> = target_tracer.as_ref().to_vec();
 
         let order: ExternalOrder = Self {
             id: hex::encode(H256::zero().as_ref().to_vec()),
@@ -165,7 +164,7 @@ pub async fn create_order_handler(
 
     let internal_order: Order = match Order::try_from(new_order.clone()) {
         Ok(t) => t,
-        Err(e) => {
+        Err(_e) => {
             return Ok(warp::reply::with_status(
                 "Invalid order".to_string(),
                 http::StatusCode::BAD_REQUEST,
