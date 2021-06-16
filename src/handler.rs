@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::convert::{From, Infallible};
+use std::convert::{From, Infallible, TryFrom};
 use std::sync::Arc;
 
 use chrono::serde::ts_seconds;
@@ -40,7 +40,7 @@ pub struct CreateOrderRequest {
     signed_data: Vec<u8>,   /* digital signature of the order */
 }
 
-impl From<CreateOrderRequest> for Order {
+impl From<CreateOrderRequest> for ExternalOrder {
     fn from(value: CreateOrderRequest) -> Self {
         /* extract request fields */
         let user: Address = value.user;
@@ -53,7 +53,7 @@ impl From<CreateOrderRequest> for Order {
         let signed_data: Vec<u8> = value.signed_data;
 
         /* construct order */
-        Order::new(
+        let order: Order = Order::new(
             user,
             target_tracer,
             side,
@@ -62,7 +62,8 @@ impl From<CreateOrderRequest> for Order {
             expiration,
             created,
             signed_data,
-        )
+        );
+        order.into()
     }
 }
 
@@ -149,12 +150,22 @@ pub async fn create_order_handler(
         ));
     }
 
-    let new_order: Order = Order::from(request);
+    let new_order: ExternalOrder = ExternalOrder::from(request);
 
-    info!("Creating order {}...", new_order);
+    let internal_order: Order = match Order::try_from(new_order) {
+        Ok(t) => t,
+        Err(_e) => {
+            return Ok(warp::reply::with_status(
+                "Invalid order".to_string(),
+                http::StatusCode::BAD_REQUEST,
+            ));
+        }
+    };
+
+    info!("Creating order {}...", internal_order.clone());
 
     let valid_order: bool = match rpc::check_order_validity(
-        new_order.clone(),
+        internal_order.clone(),
         rpc_endpoint.clone(),
     )
     .await
@@ -177,10 +188,7 @@ pub async fn create_order_handler(
     let book: &mut Book = match ome_state.book_mut(market) {
         Some(b) => b,
         None => {
-            warn!(
-                "Failed to create order {} as market does not exist!",
-                new_order
-            );
+            warn!("Failed to create order as market does not exist!",);
             return Ok(warp::reply::with_status(
                 "Market does not exist".to_string(),
                 http::StatusCode::NOT_FOUND,
@@ -188,19 +196,21 @@ pub async fn create_order_handler(
         }
     };
 
-    let tmp_order: Order = new_order.clone();
-
     /* submit order to the engine for matching */
-    match book.submit(new_order, rpc_endpoint).await {
+    match book.submit(internal_order.clone(), rpc_endpoint).await {
         Ok(order_status) => {
-            info!("Created order {}", tmp_order);
+            info!("Created order {}", internal_order.clone());
             Ok(warp::reply::with_status(
                 order_status.to_string(),
                 http::StatusCode::OK,
             ))
         }
         Err(e) => {
-            warn!("Failed to create order {}! Engine said: {}", tmp_order, e);
+            warn!(
+                "Failed to create order {}! Engine said: {}",
+                internal_order.clone(),
+                e
+            );
             Ok(warp::reply::with_status(
                 "".to_string(),
                 http::StatusCode::INTERNAL_SERVER_ERROR,
