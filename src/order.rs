@@ -5,7 +5,7 @@ use std::fmt::{Display, Formatter};
 use std::num::ParseIntError;
 use std::str::FromStr;
 
-use chrono::{DateTime, ParseError, Utc};
+use chrono::{DateTime, NaiveDateTime, ParseError, Utc};
 use derive_more::Display;
 use ethabi::Token;
 use hex::FromHexError;
@@ -217,9 +217,12 @@ impl TryFrom<ExternalOrder> for Order {
     type Error = OrderParseError;
 
     fn try_from(value: ExternalOrder) -> Result<Self, Self::Error> {
-        let id: OrderId = match OrderId::from_str(&value.id) {
-            Ok(t) => t,
-            Err(e) => return Err(e.into()),
+        let id: OrderId = match value.id.len() {
+            0 => OrderId::zero(),
+            _ => match OrderId::from_str(&value.id) {
+                Ok(t) => t,
+                Err(e) => return Err(e.into()),
+            },
         };
 
         let trader: Address = match Address::from_str(&value.user) {
@@ -252,15 +255,22 @@ impl TryFrom<ExternalOrder> for Order {
             Err(e) => return Err(e.into()),
         };
 
-        let expiration: DateTime<Utc> =
-            match DateTime::from_str(&value.expiration) {
+        let expiration: DateTime<Utc> = {
+            let timestamp: i64 = match value.expiration.parse::<i64>() {
                 Ok(t) => t,
-                Err(e) => return Err(e.into()),
+                Err(_e) => return Err(OrderParseError::InvalidTimestamp),
             };
 
-        let created: DateTime<Utc> = match DateTime::from_str(&value.created) {
-            Ok(t) => t,
-            Err(e) => return Err(e.into()),
+            DateTime::from_utc(NaiveDateTime::from_timestamp(timestamp, 0), Utc)
+        };
+
+        let created: DateTime<Utc> = {
+            let timestamp: i64 = match value.created.parse::<i64>() {
+                Ok(t) => t,
+                Err(_e) => return Err(OrderParseError::InvalidTimestamp),
+            };
+
+            DateTime::from_utc(NaiveDateTime::from_timestamp(timestamp, 0), Utc)
         };
 
         let signed_data: Vec<u8> = match hex::decode(&value.signed_data) {

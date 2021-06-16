@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use chrono::serde::ts_seconds;
 use chrono::{DateTime, Utc};
-use ethereum_types::{Address, U256};
+use ethereum_types::{Address, H256, U256};
 use serde::{Deserialize, Serialize};
 use tokio::sync::{Mutex, MutexGuard};
 use warp::http;
@@ -37,7 +37,7 @@ pub struct CreateOrderRequest {
     expiration: DateTime<Utc>, /* expiration of the order */
     #[serde(with = "ts_seconds")]
     created: DateTime<Utc>, /* creation time of the order */
-    signed_data: Vec<u8>,   /* digital signature of the order */
+    signed_data: String,    /* digital signature of the order */
 }
 
 impl From<CreateOrderRequest> for ExternalOrder {
@@ -50,20 +50,31 @@ impl From<CreateOrderRequest> for ExternalOrder {
         let amount: U256 = value.amount;
         let expiration: DateTime<Utc> = value.expiration;
         let created: DateTime<Utc> = value.created;
-        let signed_data: Vec<u8> = value.signed_data;
+        let signed_data: String = value.signed_data;
 
-        /* construct order */
-        let order: Order = Order::new(
-            user,
-            target_tracer,
-            side,
-            price,
-            amount,
-            expiration,
-            created,
-            signed_data,
-        );
-        order.into()
+        let user_bytes: Vec<u8> = value.user.as_ref().to_vec();
+        let target_tracer_bytes: Vec<u8> =
+            value.target_tracer.as_ref().to_vec();
+
+        let order: ExternalOrder = Self {
+            id: hex::encode(H256::zero().as_ref().to_vec()),
+            user: hex::encode(&user_bytes),
+            target_tracer: hex::encode(&target_tracer_bytes),
+            side: side.to_string(),
+            price: price.to_string(),
+            amount: amount.to_string(),
+            amount_left: amount.to_string(),
+            expiration: expiration.timestamp().to_string(),
+            created: created.timestamp().to_string(),
+            signed_data: {
+                let mut chr = signed_data.chars();
+                chr.next();
+                chr.next();
+                chr.as_str().to_string()
+            },
+        };
+
+        order
     }
 }
 
@@ -154,7 +165,7 @@ pub async fn create_order_handler(
 
     let internal_order: Order = match Order::try_from(new_order) {
         Ok(t) => t,
-        Err(_e) => {
+        Err(e) => {
             return Ok(warp::reply::with_status(
                 "Invalid order".to_string(),
                 http::StatusCode::BAD_REQUEST,
