@@ -7,11 +7,10 @@ use std::str::FromStr;
 
 use chrono::{DateTime, ParseError, Utc};
 use derive_more::Display;
-use ethabi::{encode, Token};
+use ethabi::Token;
 use hex::FromHexError;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
-use web3::signing::keccak256;
 use web3::types::{Address, H256, U256};
 
 pub type OrderId = H256;
@@ -163,13 +162,7 @@ impl Order {
         signed_data: Vec<u8>,
     ) -> Self {
         let id: OrderId = order_id(
-            user,
-            target_tracer,
-            side,
-            price,
-            amount,
-            expiration,
-            created,
+            trader, market, side, price, quantity, expiration, created,
         );
 
         Self {
