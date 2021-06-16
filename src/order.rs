@@ -5,14 +5,15 @@ use std::fmt::{Display, Formatter};
 use std::num::ParseIntError;
 use std::str::FromStr;
 
-use chrono::{DateTime, ParseError, Utc};
+use chrono::{DateTime, NaiveDateTime, ParseError, Utc};
 use derive_more::Display;
+use ethabi::Token;
 use hex::FromHexError;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
-use web3::types::{Address, U256};
+use web3::types::{Address, H256, U256};
 
-pub type OrderId = u64;
+pub type OrderId = H256;
 
 /// Represents which side of the market an order is on
 ///
@@ -114,6 +115,36 @@ impl From<ParseIntError> for OrderParseError {
     }
 }
 
+pub fn order_id(
+    user: Address,
+    target_tracer: Address,
+    side: OrderSide,
+    price: U256,
+    amount: U256,
+    expiration: DateTime<Utc>,
+    created: DateTime<Utc>,
+) -> OrderId {
+    /* handle indirect conversions */
+    let side_num: U256 = U256::from(match side {
+        OrderSide::Bid => 0u8,
+        OrderSide::Ask => 1u8,
+    });
+    let expiration_timestamp: U256 = U256::from(expiration.timestamp());
+    let created_timestamp: U256 = U256::from(created.timestamp());
+
+    let components: Vec<Token> = vec![
+        Token::Address(user),
+        Token::Address(target_tracer),
+        Token::Uint(price),
+        Token::Uint(amount),
+        Token::Uint(side_num),
+        Token::Uint(expiration_timestamp),
+        Token::Uint(created_timestamp),
+    ];
+
+    web3::signing::keccak256(&ethabi::encode(&components)).into()
+}
+
 impl Order {
     /// Constructor for the `Order` type
     ///
@@ -130,7 +161,9 @@ impl Order {
         created: DateTime<Utc>,
         signed_data: Vec<u8>,
     ) -> Self {
-        let id: OrderId = 0; /* TODO: determine how IDs are to be generated */
+        let id: OrderId = order_id(
+            trader, market, side, price, quantity, expiration, created,
+        );
 
         Self {
             id,
@@ -163,10 +196,11 @@ pub struct ExternalOrder {
 
 impl From<Order> for ExternalOrder {
     fn from(value: Order) -> Self {
+        let id_bytes: Vec<u8> = value.id.as_ref().to_vec();
         let trader_bytes: Vec<u8> = value.trader.as_ref().to_vec();
         let market_bytes: Vec<u8> = value.market.as_ref().to_vec();
         Self {
-            id: value.id.to_string(),
+            id: "0x".to_string() + &hex::encode(&id_bytes),
             user: "0x".to_string() + &hex::encode(&trader_bytes),
             target_tracer: "0x".to_string() + &hex::encode(&market_bytes),
             side: value.side.to_string(),
@@ -184,11 +218,6 @@ impl TryFrom<ExternalOrder> for Order {
     type Error = OrderParseError;
 
     fn try_from(value: ExternalOrder) -> Result<Self, Self::Error> {
-        let id: OrderId = match OrderId::from_str(&value.id) {
-            Ok(t) => t,
-            Err(e) => return Err(e.into()),
-        };
-
         let trader: Address = match Address::from_str(&value.user) {
             Ok(t) => t,
             Err(e) => return Err(e.into()),
@@ -219,21 +248,32 @@ impl TryFrom<ExternalOrder> for Order {
             Err(e) => return Err(e.into()),
         };
 
-        let expiration: DateTime<Utc> =
-            match DateTime::from_str(&value.expiration) {
+        let expiration: DateTime<Utc> = {
+            let timestamp: i64 = match value.expiration.parse::<i64>() {
                 Ok(t) => t,
-                Err(e) => return Err(e.into()),
+                Err(_e) => return Err(OrderParseError::InvalidTimestamp),
             };
 
-        let created: DateTime<Utc> = match DateTime::from_str(&value.created) {
-            Ok(t) => t,
-            Err(e) => return Err(e.into()),
+            DateTime::from_utc(NaiveDateTime::from_timestamp(timestamp, 0), Utc)
+        };
+
+        let created: DateTime<Utc> = {
+            let timestamp: i64 = match value.created.parse::<i64>() {
+                Ok(t) => t,
+                Err(_e) => return Err(OrderParseError::InvalidTimestamp),
+            };
+
+            DateTime::from_utc(NaiveDateTime::from_timestamp(timestamp, 0), Utc)
         };
 
         let signed_data: Vec<u8> = match hex::decode(&value.signed_data) {
             Ok(t) => t,
             Err(e) => return Err(e.into()),
         };
+
+        let id: OrderId = order_id(
+            trader, market, side, price, quantity, expiration, created,
+        );
 
         Ok(Self {
             id,
