@@ -138,9 +138,18 @@ pub async fn read_book_handler(
     state: Arc<Mutex<OmeState>>,
 ) -> Result<impl Reply, Rejection> {
     let ome_state: MutexGuard<OmeState> = state.lock().await;
-    let book: Book = ome_state.book(market).unwrap().clone();
+    let book: Book = match ome_state.book(market) {
+        Some(t) => t.clone(),
+        None => {
+            return Ok(warp::reply::with_status(
+                "Market does not exist".to_string(),
+                http::StatusCode::NOT_FOUND,
+            )
+            .into_response());
+        }
+    };
     let payload: ExternalBook = ExternalBook::from(book);
-    Ok(json(&payload))
+    Ok(json(&payload).into_response())
 }
 
 /// REST API route handler for creating a single order
