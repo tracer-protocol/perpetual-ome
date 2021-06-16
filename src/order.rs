@@ -220,17 +220,6 @@ impl TryFrom<ExternalOrder> for Order {
     fn try_from(value: ExternalOrder) -> Result<Self, Self::Error> {
         let mut id_exists: bool = true;
 
-        let mut id: OrderId = match value.id.len() {
-            0 => {
-                id_exists = false;
-                OrderId::zero()
-            }
-            _ => match OrderId::from_str(&value.id) {
-                Ok(t) => t,
-                Err(e) => return Err(e.into()),
-            },
-        };
-
         let trader: Address = match Address::from_str(&value.user) {
             Ok(t) => t,
             Err(e) => return Err(e.into()),
@@ -284,11 +273,7 @@ impl TryFrom<ExternalOrder> for Order {
             Err(e) => return Err(e.into()),
         };
 
-        if !id_exists {
-            id = order_id(
-                trader, market, side, price, quantity, expiration, created,
-            );
-        }
+        let id: OrderId = order_id(trader, market, side, price, quantity, expiration, created);
 
         Ok(Self {
             id,
