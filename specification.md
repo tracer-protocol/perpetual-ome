@@ -10,6 +10,8 @@
 ### Pseudocode ###
 This document makes use of pseudocode written in a Rust-like language. While the intent is that such code follows Rust's syntax and semantics, it may deviate from this at times.
 
+Additionally, while all JSON blocks in this document are valid JSON, they have been formatted to be human-readable. Actual implementations should likely minimise these.
+
 ### Boilerplate ###
 Boilerplate such as accessers (i.e., getters and setters), constructors, destructors, etc. have been omitted from this specification. This has been done for numerous reasons:
 
@@ -167,7 +169,7 @@ The Submission API is the user-facing interface of the OME. It accepts order flo
 
 | Object | Create | Read | Update | Destroy | Index |
 | ------ | ------ | ---- | ------ | ------- | ----- |
-| Order  | `POST /book/{market}/order` | `GET /book/{market}/order/{order_id}` | `PUT /book/{market}/order/{order_id}` | `DELETE /book/{market}/order/{order_id}` | `GET /book/{market}/order` |
+| Order  | `POST /book/{market}/order` | `GET /book/{market}/order/{order_id}` | N/A | `DELETE /book/{market}/order/{order_id}` | `GET /book/{market}/order` |
 | Book   | `POST /book` | `GET /book/{market}` | N/A | N/A | `GET /book` |
 
 ##### `GET book/` #####
