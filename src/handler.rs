@@ -1,10 +1,10 @@
 use std::collections::HashMap;
-use std::convert::{From, Infallible};
+use std::convert::{From, Infallible, TryFrom};
 use std::sync::Arc;
 
 use chrono::serde::ts_seconds;
 use chrono::{DateTime, Utc};
-use ethereum_types::{Address, U256};
+use ethereum_types::{Address, H256, U256};
 use serde::{Deserialize, Serialize};
 use tokio::sync::{Mutex, MutexGuard};
 use warp::http;
@@ -12,8 +12,8 @@ use warp::http::StatusCode;
 use warp::reply::json;
 use warp::{Rejection, Reply};
 
-use crate::book::Book;
-use crate::order::{Order, OrderId, OrderSide};
+use crate::book::{Book, ExternalBook};
+use crate::order::{ExternalOrder, Order, OrderId, OrderSide};
 use crate::rpc;
 use crate::state::OmeState;
 use crate::util::{from_hex_de, from_hex_se};
@@ -44,10 +44,10 @@ pub struct CreateOrderRequest {
     expiration: DateTime<Utc>, /* expiration of the order */
     #[serde(with = "ts_seconds")]
     created: DateTime<Utc>, /* creation time of the order */
-    signed_data: Vec<u8>,   /* digital signature of the order */
+    signed_data: String,    /* digital signature of the order */
 }
 
-impl From<CreateOrderRequest> for Order {
+impl From<CreateOrderRequest> for ExternalOrder {
     fn from(value: CreateOrderRequest) -> Self {
         /* extract request fields */
         let user: Address = value.user;
@@ -57,19 +57,30 @@ impl From<CreateOrderRequest> for Order {
         let amount: U256 = value.amount;
         let expiration: DateTime<Utc> = value.expiration;
         let created: DateTime<Utc> = value.created;
-        let signed_data: Vec<u8> = value.signed_data;
+        let signed_data: String = value.signed_data;
 
-        /* construct order */
-        Order::new(
-            user,
-            target_tracer,
-            side,
-            price,
-            amount,
-            expiration,
-            created,
-            signed_data,
-        )
+        let user_bytes: Vec<u8> = user.as_ref().to_vec();
+        let target_tracer_bytes: Vec<u8> = target_tracer.as_ref().to_vec();
+
+        let order: ExternalOrder = Self {
+            id: hex::encode(H256::zero().as_ref().to_vec()),
+            user: hex::encode(&user_bytes),
+            target_tracer: hex::encode(&target_tracer_bytes),
+            side: side.to_string(),
+            price: price.to_string(),
+            amount: amount.to_string(),
+            amount_left: amount.to_string(),
+            expiration: expiration.timestamp().to_string(),
+            created: created.timestamp().to_string(),
+            signed_data: {
+                let mut chr = signed_data.chars();
+                chr.next();
+                chr.next();
+                chr.as_str().to_string()
+            },
+        };
+
+        order
     }
 }
 
@@ -152,7 +163,18 @@ pub async fn read_book_handler(
     state: Arc<Mutex<OmeState>>,
 ) -> Result<impl Reply, Rejection> {
     let ome_state: MutexGuard<OmeState> = state.lock().await;
-    Ok(json(&ome_state.book(market)))
+    let book: Book = match ome_state.book(market) {
+        Some(t) => t.clone(),
+        None => {
+            return Ok(warp::reply::with_status(
+                "Market does not exist".to_string(),
+                http::StatusCode::NOT_FOUND,
+            )
+            .into_response());
+        }
+    };
+    let payload: ExternalBook = ExternalBook::from(book);
+    Ok(json(&payload).into_response())
 }
 
 /// REST API route handler for creating a single order
@@ -177,12 +199,22 @@ pub async fn create_order_handler(
         ));
     }
 
-    let new_order: Order = Order::from(request);
+    let new_order: ExternalOrder = ExternalOrder::from(request);
 
-    info!("Creating order {}...", new_order);
+    let internal_order: Order = match Order::try_from(new_order.clone()) {
+        Ok(t) => t,
+        Err(_e) => {
+            return Ok(warp::reply::with_status(
+                "Invalid order".to_string(),
+                http::StatusCode::BAD_REQUEST,
+            ));
+        }
+    };
+
+    info!("Creating order {}...", internal_order.clone());
 
     let valid_order: bool = match rpc::check_order_validity(
-        new_order.clone(),
+        Order::try_from(new_order.clone()).unwrap(),
         rpc_endpoint.clone(),
     )
     .await
@@ -226,12 +258,13 @@ pub async fn create_order_handler(
         }
     };
 
-    let tmp_order: Order = new_order.clone();
-
     /* submit order to the engine for matching */
-    match book.submit(new_order, rpc_endpoint).await {
+    match book
+        .submit(Order::try_from(new_order.clone()).unwrap(), rpc_endpoint)
+        .await
+    {
         Ok(order_status) => {
-            info!("Created order {}", tmp_order);
+            info!("Created order {}", internal_order.clone());
             Ok(warp::reply::with_status(
                 warp::reply::json(&order_status.to_string()),
                 http::StatusCode::OK,
@@ -277,8 +310,8 @@ pub async fn read_order_handler(
     };
 
     /* retrieve order */
-    let order: &Order = match book.order(id) {
-        Some(o) => o,
+    let order: ExternalOrder = match book.order(id) {
+        Some(o) => o.clone().into(),
         None => {
             let status: StatusCode = warp::http::StatusCode::NOT_FOUND;
             let resp_body: OmeResponse = OmeResponse {
@@ -366,7 +399,7 @@ pub async fn market_user_orders_handler(
         .bids
         .values()
         .into_iter()
-        .flat_map(|levels| levels.into_iter().filter(|o| o.user == user))
+        .flat_map(|levels| levels.into_iter().filter(|o| o.trader == user))
         .cloned()
         .collect();
 
@@ -374,7 +407,7 @@ pub async fn market_user_orders_handler(
         .asks
         .values()
         .into_iter()
-        .flat_map(|levels| levels.into_iter().filter(|o| o.user == user))
+        .flat_map(|levels| levels.into_iter().filter(|o| o.trader == user))
         .cloned()
         .collect();
 

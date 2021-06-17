@@ -446,7 +446,7 @@ pub async fn test_partial_matching_mutability() {
             let mut side: BTreeMap<U256, VecDeque<Order>> = BTreeMap::new();
             let mut level: VecDeque<Order> = VecDeque::new();
             let mut order: Order = orders[2].clone();
-            order.amount_left =
+            order.remaining =
                 U256::from_dec_str("0800000000000000000").unwrap();
             level.push_back(order);
             side.insert(orders[2].clone().price, level);

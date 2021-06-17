@@ -5,7 +5,7 @@ use reqwest::{header, Client, Response};
 use serde::{Deserialize, Serialize};
 use web3::types::H160;
 
-use crate::order::Order;
+use crate::order::{ExternalOrder, Order};
 
 #[derive(Display, Debug)]
 pub enum RpcError {
@@ -28,13 +28,13 @@ impl From<rustc_hex::FromHexError> for RpcError {
 
 #[derive(Serialize, Deserialize)]
 pub struct MatchRequest {
-    maker: Order,
-    taker: Order,
+    maker: ExternalOrder,
+    taker: ExternalOrder,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CheckRequest {
-    order: Order,
+    order: ExternalOrder,
 }
 
 #[allow(unused_must_use)]
@@ -45,7 +45,7 @@ pub async fn check_order_validity(
     let endpoint: String = address + "/check";
     let client: Client = Client::new();
     let payload: CheckRequest = CheckRequest {
-        order: order.clone(),
+        order: ExternalOrder::from(order.clone()),
     };
 
     info!(
@@ -79,7 +79,10 @@ pub async fn send_matched_orders(
         maker, taker, address
     );
 
-    let payload: MatchRequest = MatchRequest { maker, taker };
+    let payload: MatchRequest = MatchRequest {
+        maker: maker.into(),
+        taker: taker.into(),
+    };
     let client: Client = Client::new();
     let endpoint: String = address.clone() + "/submit";
 
