@@ -426,8 +426,12 @@ pub async fn market_user_orders_handler(
         .cloned()
         .collect();
 
-    let orders: Vec<Order> =
-        bids.iter().cloned().chain(asks.iter().cloned()).collect();
+    let orders: Vec<ExternalOrder> = bids
+        .iter()
+        .cloned()
+        .chain(asks.iter().cloned())
+        .map(ExternalOrder::from)
+        .collect();
 
     Ok(json(&orders).into_response())
 }
