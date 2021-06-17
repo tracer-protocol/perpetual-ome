@@ -79,6 +79,7 @@ pub enum OrderParseError {
     InvalidSide,
     InvalidTimestamp,
     IntegerBounds,
+    InvalidDecimal,
 }
 
 impl Display for OrderParseError {
@@ -233,19 +234,19 @@ impl TryFrom<ExternalOrder> for Order {
             Err(e) => return Err(e),
         };
 
-        let price: U256 = match U256::from_str(&value.price) {
+        let price: U256 = match U256::from_dec_str(&value.price) {
             Ok(t) => t,
-            Err(e) => return Err(e.into()),
+            Err(e) => return Err(OrderParseError::InvalidDecimal),
         };
 
-        let quantity: U256 = match U256::from_str(&value.amount) {
+        let quantity: U256 = match U256::from_dec_str(&value.amount) {
             Ok(t) => t,
-            Err(e) => return Err(e.into()),
+            Err(e) => return Err(OrderParseError::InvalidDecimal),
         };
 
-        let remaining: U256 = match U256::from_str(&value.amount_left) {
+        let remaining: U256 = match U256::from_dec_str(&value.amount_left) {
             Ok(t) => t,
-            Err(e) => return Err(e.into()),
+            Err(e) => return Err(OrderParseError::InvalidDecimal),
         };
 
         let expiration: DateTime<Utc> = {
