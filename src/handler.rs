@@ -397,9 +397,14 @@ pub async fn market_user_orders_handler(
     let book: &mut Book = match ome_state.book_mut(market) {
         Some(b) => b,
         None => {
+            let status: StatusCode = StatusCode::NOT_FOUND;
+            let resp_body: OmeResponse = OmeResponse {
+                status: status.as_u16(),
+                message: "Market does not exist".to_string(),
+            };
             return Ok(warp::reply::with_status(
-                warp::reply::json(&"Market does not exist".to_string()),
-                http::StatusCode::NOT_FOUND,
+                warp::reply::json(&resp_body),
+                status,
             )
             .into_response());
         }
