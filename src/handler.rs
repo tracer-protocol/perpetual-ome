@@ -270,9 +270,14 @@ pub async fn create_order_handler(
     {
         Ok(order_status) => {
             info!("Created order {}", internal_order.clone());
+            let status: StatusCode = StatusCode::OK;
+            let resp_body: OmeResponse = OmeResponse {
+                status: status.as_u16(),
+                message: order_status.to_string(),
+            };
             Ok(warp::reply::with_status(
-                warp::reply::json(&order_status.to_string()),
-                http::StatusCode::OK,
+                warp::reply::json(&resp_body),
+                status,
             ))
         }
         Err(e) => {
