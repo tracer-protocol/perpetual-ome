@@ -150,7 +150,6 @@ For both the Submission and Execution APIs, the following rules apply to all rou
 
  - If the request payload is malformed in any way, the server must return a HTTP 400 Bad Request
  - In the event of a miscellaneous error (i.e., an error condition not covered explicitly by this specification), the server must return a HTTP 500 Internal Server Error
- - For any error response, the response body is left to be **implementation-defined**
 
 #### Submission API ####
 
@@ -207,7 +206,23 @@ An example request payload is:
 
 ###### Response ######
 
-No response body is required from the OME. Compliant implementations may choose to return application-specific data in the response body.
+On success:
+
+```json
+{
+    "status": 200,
+    "message": "Market created"
+}
+```
+
+On failure, the appropriate status code and error message. For example,
+
+```json
+{
+    "status": 409,
+    "message": "Market already exists"
+}
+```
 
 | Error Condition | HTTP Status Code |
 | --------------- | ---------------- |
