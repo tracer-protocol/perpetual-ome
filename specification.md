@@ -4,7 +4,7 @@
 
 **Version**: 0.4.2
 
-**Authors**: Jack McPherson \<[jack.mcpherson@mycelium.ventures](mailto:jack.mcpherson@mycelium.ventures)\>
+**Authors**: Jack McPherson \<[jackm@lionsmane.dev](mailto:jackm@lionsmane.dev)\>
 
 ## Preface ##
 ### Pseudocode ###
