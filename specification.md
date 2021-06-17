@@ -25,18 +25,7 @@ The Order Matching Engine (OME) is an architectural component of the entire Trac
  - Match user-submitted orders
  - Maintain an order book from both user-submitted order flow and upstream order state
 
-As such, the inputs to the OME can be summarised as follows:
-
- - User-submitted order data
- - Upstream order state
-
-The outputs of the OME are:
-
- - Pairs of matched orders
-
-The OME sends its output to an Executioner - a separate, but related component of the Tracer system which is responsible for both order batching (for gas efficiency) and RPC interactions with the Tracer smart contracts on the Ethereum blockchain. The Executioner is largely out of scope for this document.
-
-Due to its responsibilities, the OME must maintain attractive performance guarantees - particularly with respect to order matching latency.
+The OME's inputs are user-submitted orders and it's outputs are pairings of orders that have successfully matched. These 2-tuples are then submitted upstream to the [Executioner](https://github.com/tracer-protocol/executioner).
 
 ## Rationale ##
 While the OME is not necessary for the correct operation of the Tracer protocol itself, it provides important usability and efficiency gains to the network overall.
