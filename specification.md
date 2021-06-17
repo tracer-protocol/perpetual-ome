@@ -59,7 +59,7 @@ The `Order` type represents an order in a Tracer Perpetual Swaps market.
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| ID | 256-bit unsigned integer | The unique identifier of the order |
+| ID | 32-byte Keccak-256 digest | The unique identifier of the order |
 | Address | Ethereum address | The Ethereum address of the trader submitting this order |
 | Market | Ethereum address | The Ethereum address of the Tracer Perpetual Swaps market |
 | Side | `OrderSide` | The side of the market for the order |
