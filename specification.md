@@ -1,4 +1,4 @@
-# Tracer OME Technical Specification #
+# Tracer Perpetual Swaps OME Technical Specification #
 
 ## Document Metadata ##
 
@@ -20,7 +20,7 @@ Boilerplate such as accessers (i.e., getters and setters), constructors, destruc
  - Ease of maintenance of the specification itself
 
 ## Introduction ##
-The Order Matching Engine (OME) is an architectural component of the entire Tracer protocol. It has two responsibilities:
+The Order Matching Engine (OME) is an architectural component of the entire Tracer Perpetual Swaps protocol. It has two responsibilities:
 
  - Match user-submitted orders
  - Maintain an order book from both user-submitted order flow and upstream order state
@@ -28,7 +28,7 @@ The Order Matching Engine (OME) is an architectural component of the entire Trac
 The OME's inputs are user-submitted orders and it's outputs are pairings of orders that have successfully matched. These 2-tuples are then submitted upstream to the [Executioner](https://github.com/tracer-protocol/executioner).
 
 ## Rationale ##
-While the OME is not necessary for the correct operation of the Tracer protocol itself, it provides important usability and efficiency gains to the network overall.
+While the OME is not necessary for the correct operation of the Tracer Perpetual Swaps protocol itself, it provides important usability and efficiency gains to the network overall.
 
 The OME exposes a simple and familiar RESTful JSON API to both frontend developers and market makers. In essence, it abstracts away the complexity associated with blockchain interaction.
 
@@ -53,7 +53,7 @@ The `OrderSide` type is an enumerated type with the following fields:
 ### `Order` ###
 #### Description ####
 
-The `Order` type represents an order in a Tracer market.
+The `Order` type represents an order in a Tracer Perpetual Swaps market.
 
 #### Fields ####
 
@@ -61,7 +61,7 @@ The `Order` type represents an order in a Tracer market.
 | ---- | ---- | ----------- |
 | ID | 256-bit unsigned integer | The unique identifier of the order |
 | Address | Ethereum address | The Ethereum address of the trader submitting this order |
-| Market | Ethereum address | The Ethereum address of the Tracer market |
+| Market | Ethereum address | The Ethereum address of the Tracer Perpetual Swaps market |
 | Side | `OrderSide` | The side of the market for the order |
 | Price | 256-bit unsigned integer | The price of the order |
 | Amount | 256-bit unsigned integer | The quantity of the order |
@@ -75,14 +75,14 @@ N/A
 ### `Book` ###
 #### Description ####
 
-The `Book` type is an ADT representing the entire state of a given Tracer
+The `Book` type is an ADT representing the entire state of a given Tracer Perpetual Swaps
 market. It is essentially a container type holding orders.
 
 #### Fields ####
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| Market | Ethereum address | The Etheruem address of the Tracer smart contract for the market |
+| Market | Ethereum address | The Etheruem address of the Tracer Perpetual Swaps smart contract for the market |
 | Bids | Mapping from prices to collections of orders | The bid side of the market |
 | Asks | Mapping from prices to collections of orders | The ask side of the market |
 | LTP | 256-bit unsigned integer | The last traded price of the market |
@@ -165,7 +165,7 @@ The Submission API is the user-facing interface of the OME. It accepts order flo
 
 ###### Description ######
 
-HTTP GET requests to the `book/` endpoint must return the entire list of Tracer markets that the OME knows about.
+HTTP GET requests to the `book/` endpoint must return the entire list of Tracer Perpetual Swaps markets that the OME knows about.
 
 ###### Request ######
 
