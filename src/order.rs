@@ -236,17 +236,17 @@ impl TryFrom<ExternalOrder> for Order {
 
         let price: U256 = match U256::from_dec_str(&value.price) {
             Ok(t) => t,
-            Err(e) => return Err(OrderParseError::InvalidDecimal),
+            Err(_e) => return Err(OrderParseError::InvalidDecimal),
         };
 
         let quantity: U256 = match U256::from_dec_str(&value.amount) {
             Ok(t) => t,
-            Err(e) => return Err(OrderParseError::InvalidDecimal),
+            Err(_e) => return Err(OrderParseError::InvalidDecimal),
         };
 
         let remaining: U256 = match U256::from_dec_str(&value.amount_left) {
             Ok(t) => t,
-            Err(e) => return Err(OrderParseError::InvalidDecimal),
+            Err(_e) => return Err(OrderParseError::InvalidDecimal),
         };
 
         let expiration: DateTime<Utc> = {

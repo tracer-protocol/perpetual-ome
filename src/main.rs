@@ -122,7 +122,6 @@ async fn main() {
 
     let create_order_state: Arc<Mutex<OmeState>> = state.clone();
     let read_order_state: Arc<Mutex<OmeState>> = state.clone();
-    let update_order_state: Arc<Mutex<OmeState>> = state.clone();
     let destroy_order_state: Arc<Mutex<OmeState>> = state.clone();
 
     let market_user_orders_state: Arc<Mutex<OmeState>> = state.clone();
@@ -155,11 +154,6 @@ async fn main() {
         .and(warp::get())
         .and(warp::any().map(move || read_order_state.clone()))
         .and_then(handler::read_order_handler);
-    let update_order_route = warp::path!("book" / Address / "order" / OrderId)
-        .and(warp::put())
-        .and(warp::body::json())
-        .and(warp::any().map(move || update_order_state.clone()))
-        .and_then(handler::update_order_handler);
     let destroy_order_route = warp::path!("book" / Address / "order" / OrderId)
         .and(warp::delete())
         .and(warp::any().map(move || destroy_order_state.clone()))
@@ -182,7 +176,6 @@ async fn main() {
     /* aggregate all of our order routes */
     let order_routes = create_order_route
         .or(read_order_route)
-        .or(update_order_route)
         .or(destroy_order_route);
 
     let misc_routes = market_user_orders_route;
