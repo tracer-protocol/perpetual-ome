@@ -204,9 +204,14 @@ pub async fn create_order_handler(
     let internal_order: Order = match Order::try_from(new_order.clone()) {
         Ok(t) => t,
         Err(_e) => {
+            let status: StatusCode = StatusCode::BAD_REQUEST;
+            let resp_body: OmeResponse = OmeResponse {
+                status: status.as_u16(),
+                message: "Invalid order".to_string(),
+            };
             return Ok(warp::reply::with_status(
-                "Invalid order".to_string(),
-                http::StatusCode::BAD_REQUEST,
+                warp::reply::json(&resp_body),
+                status,
             ));
         }
     };
@@ -243,7 +248,7 @@ pub async fn create_order_handler(
         Some(b) => b,
         None => {
             warn!(
-                "Failed to create order {} as market does not exist!",
+                "Failed to create order {:?} as market does not exist!",
                 new_order
             );
             let status: StatusCode = warp::http::StatusCode::NOT_FOUND;
@@ -271,7 +276,7 @@ pub async fn create_order_handler(
             ))
         }
         Err(e) => {
-            warn!("Failed to create order {}! Engine said: {}", tmp_order, e);
+            warn!("Failed to create order {:?}! Engine said: {}", new_order, e);
             let status: StatusCode = StatusCode::INTERNAL_SERVER_ERROR;
             let resp_body: OmeResponse = OmeResponse {
                 status: status.as_u16(),
@@ -325,7 +330,7 @@ pub async fn read_order_handler(
         }
     };
 
-    Ok(warp::reply::with_status(json(order), StatusCode::OK))
+    Ok(warp::reply::with_status(json(&order), StatusCode::OK))
 }
 
 /// REST API route handler for deleting a single order
