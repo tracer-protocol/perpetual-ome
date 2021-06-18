@@ -138,7 +138,7 @@ Note that `cancel` necessarily **mutates** the order book state.
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| ID | 256-bit unsigned integer | The unique identifier of the order to be cancelled |
+| ID | 32-byte Keccak-256 digest | The unique identifier of the order to be cancelled |
 
 ##### Return Type #####
 
