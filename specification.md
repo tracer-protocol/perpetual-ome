@@ -284,13 +284,16 @@ An example response payload is:
 
 ```json
 {
-    "id": 12,
-    "address": "0xdeadbeef",
+    "id": "0xb970ea16a754e6f4f31e0ffc13aef75b86bd84df0bddd6a197dc91d35eafb40a",
+    "user": "0xeaf2b0b940f2cb3aeb85cc1fe5e758856ab5530a",
+    "target_tracer": "0xe66cf41c0ca141f78d33785c2aef9b7f359d8f79",
     "side": "Ask",
-    "price": 4380090000,
-    "amount": 4,
-    "expiration": 1595997399,
-    "signedData": "0xcafebeefdeaddeadcafebeefdeaddeadcafebeefdeaddeadcafebeefdeaddeadcafebeefdeaddeadcafebeefdeaddeadcafebeefdeaddeadcafebeefdeaddeadff"
+    "price": "300000000000000000000",
+    "amount": "120000000000000000000",
+    "amount_left": "120000000000000000000",
+    "expiration": "1624322757",
+    "created": "1623977157",
+    "signed_data": "0xdc7ae45111271ec2855c62311f8835bb4db24ae37c746fd2ac539308752463ec0cb5456d9e1121a485fa9ff59a2c7543b6ab6e1ab456a6dd4d61af30ee7c94361b"
 }
 ```
 
