@@ -2,7 +2,7 @@
 
 ## Document Metadata ##
 
-**Version**: 0.4.2
+**Version**: 0.5.0 
 
 **Authors**: Jack McPherson \<[jackm@lionsmane.dev](mailto:jackm@lionsmane.dev)\>
 
