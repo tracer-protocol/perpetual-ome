@@ -177,9 +177,9 @@ An example response payload is:
 ```json
 {
     "markets": [
-        "0xcafebeef",
-        "0xdeadbeef",
-        "0xcafecafe"
+        "0xfb59B91646cd0890F3E5343384FEb746989B66C7",
+        "0x88efAbd098E18C575a6699FaA04c8d6F4050f040",
+        "0xeE40e733c4e478947D7c112C1B11c2918E1F2942"
     ]
 }
 ```
@@ -200,7 +200,7 @@ An example request payload is:
 
 ```json
 {
-    "market": "0xcafebeef"
+    "market": ""0xeE40e733c4e478947D7c112C1B11c2918E1F2942
 }
 ```
 
@@ -244,27 +244,58 @@ An example response payload is:
 
 ```json
 {
-    "market": "0xcafebeef",
+    "market": "0xe66cf41c0ca141f78d33785c2aef9b7f359d8f79",
     "bids": {
-        "8795": [
-            {
-                "id": 33,
-                "address": "0xdeaddead",
-                "side": "Bid",
-                "price": 816000000000000,
-                "amount": 2,
-                "expiration": 1595997379
-            }
+            "300000000000000000000": [
+                {
+                    "id": "0xb970ea16a754e6f4f31e0ffc13aef75b86bd84df0bddd6a197dc91d35eafb40a",
+                    "user": "0xeaf2b0b940f2cb3aeb85cc1fe5e758856ab5530a",
+                    "target_tracer": "0xe66cf41c0ca141f78d33785c2aef9b7f359d8f79",
+                    "side": "Ask",
+                    "price": "300000000000000000000",
+                    "amount": "120000000000000000000",
+                    "amount_left": "120000000000000000000",
+                    "expiration": "1624322757",
+                    "created": "1623977157",
+                    "signed_data": "0xdc7ae45111271ec2855c62311f8835bb4db24ae37c746fd2ac539308752463ec0cb5456d9e1121a485fa9ff59a2c7543b6ab6e1ab456a6dd4d61af30ee7c94361b"
+                },
+                {
+                    "id": "0xf6c83e3641a08ec21aebc01296ff12f5a46780f0fbadb1c8101309123b95d2c6",
+                    "user": "0x000000cd089424309a429e070b981c792cae2a0f",
+                    "target_tracer": "0xe66cf41c0ca141f78d33785c2aef9b7f359d8f79",
+                    "side": "Ask",
+                    "price": "300000000000000000000",
+                    "amount": "330000000000000000000",
+                    "amount_left": "330000000000000000000",
+                    "expiration": "1624325757",
+                    "created": "1623977009",
+                    "signed_data": "0xdc7ae45111271ec2855c62311f8835bb4db24ae37c746fd2ac539308752463ec0cb5456d9e1121a485fa9ff59a2c7543b6ab6e1ab456a6dd4d61af30ee7c94361b"
+                }
+            ]
+    },
+    "asks": {
+        "340000000000000000000": [
+                {
+                    "id": "0xff223d4641a08ec21aebc01296ab12f5a46780f0fbadb1c8101309123b95d2c6",
+                    "user": "0x00ab12cd089424309a429e070b981c788cae2aff",
+                    "target_tracer": "0xe66cf41c0ca141f78d33785c2aef9b7f359d8f79",
+                    "side": "Ask",
+                    "price": "340000000000000000000",
+                    "amount": "90000000000000000000",
+                    "amount_left": "90000000000000000000",
+                    "expiration": "1724325757",
+                    "created": "1523977009",
+                    "signed_data": "0xdc7ae45111271ec2855c62311f8835bb4db24ae37c746fd2ac539308752463ec0cb5456d9e1121a485fa9ff59a2c7543b6ab6e1ab456a6dd4d61af30ee7c94361b"
+                }
         ]
     },
-    "asks": [],
-    "LTP": 45996,
+    "LTP": "320000000000000000000",
     "depth": [
-        1,
-        0
+        2,
+        1
     ],
     "crossed": false,
-    "spread": -816000000000000
+    "spread": "40000000000000000000"
 }
 ```
 
@@ -305,11 +336,10 @@ N/A
 
 ###### Response ######
 
-An example response payload is:
-
 ```json
 {
-    "cancelled": 1591597771
+    "status": 200,
+    "message": "Order cancelled",
 }
 ```
 
@@ -336,13 +366,19 @@ An example request payload is:
 
 ###### Response ######
 
-An example response payload is:
+The `message` field of the response JSON object will be one of three strings:
+
+ - `"Add"` (the order was added to the order book without crossing)
+ - `"PartialMatch"` (the order was partially matched and the remainder was added to the order book)
+ - `"FullMatch"` (the order was fully matched with another order on the order book already)
 
 ```json
 {
-    "id": 88
+    "status": 200,
+    "message": "Add",
 }
 ```
+
 
 | Error Condition | HTTP Status Code |
 | --------------- | ---------------- |
