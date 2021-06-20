@@ -200,7 +200,7 @@ An example request payload is:
 
 ```json
 {
-    "market": ""0xeE40e733c4e478947D7c112C1B11c2918E1F2942
+    "market": "0xeE40e733c4e478947D7c112C1B11c2918E1F2942"
 }
 ```
 
