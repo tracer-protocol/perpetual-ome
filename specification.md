@@ -125,7 +125,7 @@ The `submit` function's return type is such that it is able to return an appropr
 #### `cancel` ####
 
 ```rust
-pub fn cancel(&mut self, order: OrderId) -> Result<Option<DateTime<Utc>>, BookError>
+pub fn cancel(&mut self, order: OrderId) -> Result<(), BookError>
 ```
 
 ##### Description #####
