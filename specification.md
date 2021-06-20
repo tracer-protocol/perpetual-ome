@@ -355,11 +355,12 @@ An example request payload is:
 
 ```json
 {
-    "address": "0xdeadbeef",
+    "user": "0xD62bf94a99c87dc7B3924A880020B6B316F536E6",
+    "target_tracer": "0x61f5a3d36c10d7ea1d797e70f7486eb7ad177481",
     "side": "Ask",
-    "price": 4380090000,
-    "amount": 4,
-    "expiration": 1595997399,
+    "price": "4380090000",
+    "amount": "4000000000",
+    "expiration": "1895997399",
     "signedData": "0xcafebeefdeaddeadcafebeefdeaddeadcafebeefdeaddeadcafebeefdeaddeadcafebeefdeaddeadcafebeefdeaddeadcafebeefdeaddeadcafebeefdeaddeadff"
 }
 ```
