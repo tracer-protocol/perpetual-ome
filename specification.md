@@ -66,6 +66,7 @@ The `Order` type represents an order in a Tracer Perpetual Swaps market.
 | Price | 256-bit unsigned integer | The price of the order |
 | Amount | 256-bit unsigned integer | The quantity of the order |
 | Expiration | Timestamp | The time at which the order will cease being valid |
+| Created | Timestamp | The time at which the order was created |
 | signedData | 65-byte-long EIP-712 signature | An EIP-712 compliant digital signature for the order |
 
 #### Domain ####
@@ -361,6 +362,7 @@ An example request payload is:
     "price": "4380090000",
     "amount": "4000000000",
     "expiration": "1895997399",
+    "created": "1495987399",
     "signedData": "0xcafebeefdeaddeadcafebeefdeaddeadcafebeefdeaddeadcafebeefdeaddeadcafebeefdeaddeadcafebeefdeaddeadcafebeefdeaddeadcafebeefdeaddeadff"
 }
 ```
