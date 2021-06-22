@@ -252,7 +252,6 @@ impl Book {
                 .await;
 
                 running_total -= amount;
-                order.remaining = running_total;
 
                 /* check if we've totally matched our incoming order */
                 if running_total.is_zero() {
