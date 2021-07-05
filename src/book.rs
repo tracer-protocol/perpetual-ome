@@ -187,7 +187,7 @@ impl Book {
         executioner_address: String,
         opposing_top: Option<U256>,
     ) -> Result<OrderStatus, BookError> {
-        debug!("Matching {}...", order);
+        info!("Matching {}...", order);
 
         let opposing_side: &mut BTreeMap<U256, VecDeque<Order>> =
             match order.side {
@@ -205,7 +205,7 @@ impl Book {
                 order.side,
             )
         {
-            debug!("{} does not cross, adding...", order);
+            info!("{} does not cross, adding...", order);
             self.add_order(order);
             return Ok(OrderStatus::Add);
         }
@@ -224,7 +224,7 @@ impl Book {
             for opposite in opposites {
                 /* no self-trading allowed */
                 if opposite.trader == order.trader {
-                    debug!("Self-trade, skipping...");
+                    info!("Self-trade, skipping...");
                     continue;
                 }
 
@@ -234,16 +234,16 @@ impl Book {
                         Ordering::Greater => order.remaining,
                         _ => opposite.remaining,
                     };
-                debug!("Matching with amount of {}...", amount);
+                info!("Matching with amount of {}...", amount);
 
                 /* match */
                 order = Book::fill(order, amount);
                 *opposite = Book::fill(opposite.clone(), amount);
 
                 self.ltp = *price;
-                debug!("LTP updated, is now {}", self.ltp);
+                info!("LTP updated, is now {}", self.ltp);
 
-                debug!("Forwarding {} and {}...", order, opposite);
+                info!("Forwarding {} and {}...", order, opposite);
                 rpc::send_matched_orders(
                     order.clone(),
                     opposite.clone(),
@@ -255,7 +255,7 @@ impl Book {
 
                 /* check if we've totally matched our incoming order */
                 if running_total.is_zero() {
-                    debug!("Totally matched {}", order);
+                    info!("Totally matched {}", order);
                     done = true;
                     break;
                 }
@@ -272,7 +272,7 @@ impl Book {
     }
 
     fn fill(order: Order, amount: U256) -> Order {
-        debug!("Filling {} of {}...", amount, order);
+        info!("Filling {} of {}...", amount, order);
         match amount.cmp(&order.remaining) {
             Ordering::Greater => order,
             _ => Order {
@@ -312,7 +312,7 @@ impl Book {
         order: Order,
         executioner_address: String,
     ) -> Result<OrderStatus, BookError> {
-        debug!("Submitting {}...", order);
+        info!("Submitting {}...", order);
 
         let match_result: Result<OrderStatus, BookError> = match order.side {
             OrderSide::Bid => {
@@ -330,7 +330,7 @@ impl Book {
 
     #[allow(clippy::unnecessary_wraps)]
     fn add_order(&mut self, order: Order) -> Result<(), BookError> {
-        debug!("Adding {}...", order);
+        info!("Adding {}...", order);
 
         let tmp_order: Order = order.clone();
         let order_side = order.side;
@@ -343,18 +343,18 @@ impl Book {
                     .entry(order_price)
                     .or_insert(orders)
                     .push_back(order);
-                debug!("Added to bid-side");
+                info!("Added to bid-side");
             }
             OrderSide::Ask => {
                 self.asks
                     .entry(order_price)
                     .or_insert(orders)
                     .push_back(order);
-                debug!("Added to ask-side");
+                info!("Added to ask-side");
             }
         }
 
-        debug!("Added {}", tmp_order);
+        info!("Added {}", tmp_order);
 
         Ok(())
     }
@@ -379,7 +379,7 @@ impl Book {
         for (_, orders) in self.bids.iter_mut() {
             for (index, order) in orders.iter_mut().enumerate() {
                 if order.id == order_id {
-                    debug!("Cancelled {}", order.clone());
+                    info!("Cancelled {}", order.clone());
                     orders.remove(index);
                     return Ok(Some(Utc::now()));
                 }
@@ -389,7 +389,7 @@ impl Book {
         for (_, orders) in self.asks.iter_mut() {
             for (index, order) in orders.iter_mut().enumerate() {
                 if order.id == order_id {
-                    debug!("Cancelled {}", order.clone());
+                    info!("Cancelled {}", order.clone());
                     orders.remove(index);
                     return Ok(Some(Utc::now()));
                 }
@@ -406,7 +406,7 @@ impl Book {
     fn update(&mut self) {
         self.prune();
         self.depth = self.depth();
-        debug!("Updated book metadata");
+        info!("Updated book metadata");
     }
 }
 
