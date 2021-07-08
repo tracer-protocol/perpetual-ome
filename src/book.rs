@@ -14,7 +14,6 @@ use thiserror::Error;
 use web3::types::Address;
 
 use crate::order::{ExternalOrder, Order, OrderId, OrderSide};
-use crate::rpc;
 use crate::util::{from_hex_de, from_hex_se};
 
 /// Represents an order book for a particular Tracer market
@@ -184,7 +183,7 @@ impl Book {
     async fn r#match(
         &mut self,
         mut order: Order,
-        executioner_address: String,
+        _executioner_address: String,
         opposing_top: Option<U256>,
     ) -> Result<OrderStatus, BookError> {
         info!("Matching {}...", order);
@@ -242,14 +241,6 @@ impl Book {
 
                 self.ltp = *price;
                 info!("LTP updated, is now {}", self.ltp);
-
-                info!("Forwarding {} and {}...", order, opposite);
-                rpc::send_matched_orders(
-                    order.clone(),
-                    opposite.clone(),
-                    executioner_address.clone(),
-                )
-                .await;
 
                 running_total -= amount;
 

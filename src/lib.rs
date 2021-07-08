@@ -11,6 +11,5 @@ extern crate pretty_env_logger;
 
 pub mod book;
 pub mod order;
-pub mod rpc;
 pub mod state;
 pub mod util;

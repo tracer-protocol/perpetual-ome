@@ -21,7 +21,6 @@ pub mod args;
 pub mod book;
 pub mod handler;
 pub mod order;
-pub mod rpc;
 pub mod state;
 pub mod tests;
 pub mod util;
