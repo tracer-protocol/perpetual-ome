@@ -14,7 +14,6 @@ use warp::{Rejection, Reply};
 
 use crate::book::{Book, ExternalBook};
 use crate::order::{ExternalOrder, Order, OrderId, OrderSide};
-use crate::rpc;
 use crate::state::OmeState;
 use crate::util::{from_hex_de, from_hex_se};
 
@@ -217,28 +216,6 @@ pub async fn create_order_handler(
     };
 
     info!("Creating order {}...", internal_order.clone());
-
-    let valid_order: bool = match rpc::check_order_validity(
-        Order::try_from(new_order.clone()).unwrap(),
-        rpc_endpoint.clone(),
-    )
-    .await
-    {
-        Ok(t) => t,
-        Err(_e) => false,
-    };
-
-    if !valid_order {
-        let status: StatusCode = warp::http::StatusCode::BAD_REQUEST;
-        let resp_body: OmeResponse = OmeResponse {
-            status: status.as_u16(),
-            message: "Invalid order".to_string(),
-        };
-        return Ok(warp::reply::with_status(
-            warp::reply::json(&resp_body),
-            status,
-        ));
-    }
 
     /* acquire lock on global state */
     let mut ome_state: MutexGuard<OmeState> = state.lock().await;
