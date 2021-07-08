@@ -8,7 +8,7 @@ Ensure you have a local env file setup to create the OME ENV. A sample env file 
 OME_EXECUTIONER_ADDRESS=<IP>
 ```
 Create a configmap holding the env variables for at least the executioner address as follows
-`kubectl create configmap ome-env --from-env-file=.env`.
+`kubectl create configmap ome-env --from-env-file=.env`
 
 You can now utilise the `deploy.yaml` file and deploy to a K8s cluster using `kubectl apply -f deploy.yaml`
 
