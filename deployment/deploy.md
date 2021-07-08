@@ -5,7 +5,7 @@ The OME may be run inside Kubernetes or in its stand alone docker container. It 
 
 Ensure you have a local env file setup to create the OME ENV. A sample env file is as follows
 ```
-EXECUTIONER_IP=<IP>
+OME_EXECUTIONER_ADDRESS=<IP>
 ```
 Create a configmap holding the env variables for at least the executioner address as follows
 `kubectl create configmap ome-env --from-env-file=.env`.
