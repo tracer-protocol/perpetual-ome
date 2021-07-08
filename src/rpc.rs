@@ -32,43 +32,6 @@ pub struct MatchRequest {
     taker: ExternalOrder,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct CheckRequest {
-    order: ExternalOrder,
-}
-
-#[allow(unused_must_use)]
-pub async fn check_order_validity(
-    order: Order,
-    address: String,
-) -> Result<bool, RpcError> {
-    let endpoint: String = address + "/check";
-    let client: Client = Client::new();
-    let payload: CheckRequest = CheckRequest {
-        order: ExternalOrder::from(order.clone()),
-    };
-
-    info!(
-        "Checking order validity by sending {} to {}...",
-        order, endpoint
-    );
-
-    let response: Response = match client
-        .post(endpoint.clone())
-        .header(header::CONTENT_TYPE, "application/json")
-        .body(serde_json::to_string(&payload).unwrap())
-        .send()
-        .await
-    {
-        Ok(t) => t,
-        Err(e) => return Err(e.into()),
-    };
-
-    info!("{} said {}", endpoint, response.status());
-
-    Ok(response.status().is_success())
-}
-
 pub async fn send_matched_orders(
     maker: Order,
     taker: Order,
