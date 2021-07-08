@@ -13,7 +13,7 @@ use warp::reply::json;
 use warp::{Rejection, Reply};
 
 use crate::book::{Book, ExternalBook};
-use crate::order::{ExternalOrder, Order, OrderId, OrderSide};
+use crate::order::{AddressWrapper, ExternalOrder, Order, OrderId, OrderSide};
 use crate::rpc;
 use crate::state::OmeState;
 use crate::util::{from_hex_de, from_hex_se};
@@ -159,11 +159,11 @@ pub async fn create_book_handler(
 
 /// REST API route handler for retrieving a single order book
 pub async fn read_book_handler(
-    market: Address,
+    market: AddressWrapper,
     state: Arc<Mutex<OmeState>>,
 ) -> Result<impl Reply, Rejection> {
     let ome_state: MutexGuard<OmeState> = state.lock().await;
-    let book: Book = match ome_state.book(market) {
+    let book: Book = match ome_state.book(Address::from(market)) {
         Some(t) => t.clone(),
         None => {
             return Ok(warp::reply::with_status(
@@ -179,7 +179,7 @@ pub async fn read_book_handler(
 
 /// REST API route handler for creating a single order
 pub async fn create_order_handler(
-    market: Address,
+    market: AddressWrapper,
     request: CreateOrderRequest,
     state: Arc<Mutex<OmeState>>,
     rpc_endpoint: String,
@@ -244,7 +244,7 @@ pub async fn create_order_handler(
     let mut ome_state: MutexGuard<OmeState> = state.lock().await;
 
     /* retrieve order book from global state */
-    let book: &mut Book = match ome_state.book_mut(market) {
+    let book: &mut Book = match ome_state.book_mut(Address::from(market)) {
         Some(b) => b,
         None => {
             warn!(
@@ -297,14 +297,14 @@ pub async fn create_order_handler(
 
 /// REST API route handler for retrieving a single order
 pub async fn read_order_handler(
-    market: Address,
+    market: AddressWrapper,
     id: OrderId,
     state: Arc<Mutex<OmeState>>,
 ) -> Result<impl Reply, Rejection> {
     let ome_state: MutexGuard<OmeState> = state.lock().await;
 
     /* retrieve order book */
-    let book: &Book = match ome_state.book(market) {
+    let book: &Book = match ome_state.book(Address::from(market)) {
         Some(b) => b,
         None => {
             let status: StatusCode = warp::http::StatusCode::NOT_FOUND;
@@ -342,14 +342,14 @@ pub async fn read_order_handler(
 ///
 /// Note that this is equivalent to order cancellation
 pub async fn destroy_order_handler(
-    market: Address,
+    market: AddressWrapper,
     id: OrderId,
     state: Arc<Mutex<OmeState>>,
 ) -> Result<impl Reply, Rejection> {
     let mut ome_state: MutexGuard<OmeState> = state.lock().await;
 
     /* retrieve order book */
-    let book: &mut Book = match ome_state.book_mut(market) {
+    let book: &mut Book = match ome_state.book_mut(Address::from(market)) {
         Some(b) => b,
         None => {
             return Ok(warp::reply::with_status(
@@ -387,14 +387,14 @@ pub async fn destroy_order_handler(
 
 #[allow(clippy::into_iter_on_ref)]
 pub async fn market_user_orders_handler(
-    market: Address,
-    user: Address,
+    market: AddressWrapper,
+    user: AddressWrapper,
     state: Arc<Mutex<OmeState>>,
 ) -> Result<impl Reply, Rejection> {
     let mut ome_state: MutexGuard<OmeState> = state.lock().await;
 
     /* retrieve order book */
-    let book: &mut Book = match ome_state.book_mut(market) {
+    let book: &mut Book = match ome_state.book_mut(Address::from(market)) {
         Some(b) => b,
         None => {
             let status: StatusCode = StatusCode::NOT_FOUND;
@@ -414,7 +414,11 @@ pub async fn market_user_orders_handler(
         .bids
         .values()
         .into_iter()
-        .flat_map(|levels| levels.into_iter().filter(|o| o.trader == user))
+        .flat_map(|levels| {
+            levels
+                .into_iter()
+                .filter(|o| o.trader == Address::from(user))
+        })
         .cloned()
         .collect();
 
@@ -422,7 +426,11 @@ pub async fn market_user_orders_handler(
         .asks
         .values()
         .into_iter()
-        .flat_map(|levels| levels.into_iter().filter(|o| o.trader == user))
+        .flat_map(|levels| {
+            levels
+                .into_iter()
+                .filter(|o| o.trader == Address::from(user))
+        })
         .cloned()
         .collect();
 
