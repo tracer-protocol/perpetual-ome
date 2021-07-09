@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 //! Contains logic and type definitions for the order book itself and the
 //! matching engine also
 use std::{
@@ -13,8 +14,17 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use web3::types::Address;
 
-use crate::order::{ExternalOrder, Order, OrderId, OrderSide};
+use crate::order::{ExternalOrder, Order, OrderId, OrderSide, Quantity};
 use crate::util::{from_hex_de, from_hex_se};
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Fill {
+    maker: OrderId,
+    taker: OrderId,
+    quantity: Quantity,
+}
+
+pub type Fills = Vec<Fill>;
 
 /// Represents an order book for a particular Tracer market
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]

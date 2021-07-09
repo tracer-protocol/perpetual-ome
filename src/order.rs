@@ -14,6 +14,7 @@ use thiserror::Error;
 use web3::types::{Address, H256, U256};
 
 pub type OrderId = H256;
+pub type Quantity = U256;
 
 /// Represents which side of the market an order is on
 ///
