@@ -12,7 +12,8 @@ use warp::http::StatusCode;
 use warp::reply::json;
 use warp::{Rejection, Reply};
 
-use crate::book::{Book, ExternalBook};
+use crate::api;
+use crate::book::Book;
 use crate::order::{ExternalOrder, Order, OrderId, OrderSide};
 use crate::state::OmeState;
 use crate::util::{from_hex_de, from_hex_se};
@@ -161,19 +162,15 @@ pub async fn read_book_handler(
     market: Address,
     state: Arc<Mutex<OmeState>>,
 ) -> Result<impl Reply, Rejection> {
-    let ome_state: MutexGuard<OmeState> = state.lock().await;
-    let book: Book = match ome_state.book(market) {
-        Some(t) => t.clone(),
-        None => {
-            return Ok(warp::reply::with_status(
-                "Market does not exist".to_string(),
-                http::StatusCode::NOT_FOUND,
-            )
-            .into_response());
-        }
-    };
-    let payload: ExternalBook = ExternalBook::from(book);
-    Ok(json(&payload).into_response())
+    let msg: api::Message =
+        api::Message::from(match state.lock().await.book(market) {
+            Some(t) => api::outbound::Message::ReadBook(t.clone()),
+            None => {
+                api::outbound::Message::Error(api::outbound::Error::NoSuchBook)
+            }
+        });
+
+    Ok(json(&msg).into_response())
 }
 
 /// REST API route handler for creating a single order
