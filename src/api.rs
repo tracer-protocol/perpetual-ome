@@ -1,14 +1,22 @@
 #![allow(dead_code)]
 use serde::{Deserialize, Serialize};
 
-use crate::book::Fill;
+use crate::book::{Book, Fill, Fills};
+use crate::order::Order;
 
-pub type Fills = Vec<Fill>;
+#[derive(Clone, Debug, Serialize)]
+pub enum MessagePayload {
+    Book(Book),
+    Order(Order),
+    String(String),
+    Empty(()),
+    Fills(Fills),
+}
 
-#[derive(Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct Message {
     message: String,
-    data: String,
+    data: MessagePayload,
 }
 
 impl From<outbound::Message> for Message {
@@ -16,33 +24,27 @@ impl From<outbound::Message> for Message {
         match msg {
             outbound::Message::Placed => Self {
                 message: "Placed".to_string(),
-                data: serde_json::to_string("").unwrap(),
+                data: MessagePayload::Empty(()),
             },
             outbound::Message::PartialMatch(fills) => Self {
                 message: "Partially Matched".to_string(),
-                data: serde_json::to_string(&fills)
-                    .map_err(|_| format!(""))
-                    .unwrap(),
+                data: MessagePayload::Fills(fills),
             },
             outbound::Message::FullMatch(fills) => Self {
                 message: "Fully Matched".to_string(),
-                data: serde_json::to_string(&fills)
-                    .map_err(|_| format!(""))
-                    .unwrap(),
+                data: MessagePayload::Fills(fills),
             },
             outbound::Message::Cancelled => Self {
                 message: "Cancelled".to_string(),
-                data: serde_json::to_string("").unwrap(),
+                data: MessagePayload::Empty(()),
             },
             outbound::Message::ReadBook(book) => Self {
                 message: "Book".to_string(),
-                data: serde_json::to_string(&book)
-                    .map_err(|_| format!(""))
-                    .unwrap(),
+                data: MessagePayload::Book(book),
             },
             outbound::Message::Error(e) => Self {
                 message: "Error".to_string(),
-                data: serde_json::to_string("").unwrap(),
+                data: MessagePayload::String(e.to_string()),
             },
         }
     }
@@ -92,6 +94,9 @@ pub mod inbound {
 pub mod outbound {
     use super::*;
 
+    use std::fmt;
+    use std::fmt::{Display, Formatter};
+
     use crate::book::Book;
 
     pub type Fills = Vec<Fill>;
@@ -101,6 +106,16 @@ pub mod outbound {
         NoSuchBook,
         NoSuchOrder,
         InvalidOrder,
+    }
+
+    impl Display for Error {
+        fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+            match self {
+                Self::NoSuchBook => write!(f, "No such book"),
+                Self::NoSuchOrder => write!(f, "No such order"),
+                Self::InvalidOrder => write!(f, "Invalid order"),
+            }
+        }
     }
 
     #[derive(Clone, Debug)]
