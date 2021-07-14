@@ -277,39 +277,17 @@ pub async fn read_order_handler(
 ) -> Result<impl Reply, Rejection> {
     let ome_state: MutexGuard<OmeState> = state.lock().await;
 
-    /* retrieve order book */
-    let book: &Book = match ome_state.book(market) {
-        Some(b) => b,
-        None => {
-            let status: StatusCode = warp::http::StatusCode::NOT_FOUND;
-            let resp_body: OmeResponse = OmeResponse {
-                status: status.as_u16(),
-                message: "Market does not exist".to_string(),
-            };
-            return Ok(warp::reply::with_status(
-                warp::reply::json(&resp_body),
-                status,
-            ));
-        }
-    };
+    let msg: api::Message = api::Message::from(match ome_state.book(market) {
+        Some(book) => match book.order(id) {
+            Some(order) => api::outbound::Message::ReadOrder(order.clone()),
+            None => {
+                api::outbound::Message::Error(api::outbound::Error::NoSuchOrder)
+            }
+        },
+        None => api::outbound::Message::Error(api::outbound::Error::NoSuchBook),
+    });
 
-    /* retrieve order */
-    let order: ExternalOrder = match book.order(id) {
-        Some(o) => o.clone().into(),
-        None => {
-            let status: StatusCode = warp::http::StatusCode::NOT_FOUND;
-            let resp_body: OmeResponse = OmeResponse {
-                status: status.as_u16(),
-                message: "Order does not exist in this market".to_string(),
-            };
-            return Ok(warp::reply::with_status(
-                warp::reply::json(&resp_body),
-                status,
-            ));
-        }
-    };
-
-    Ok(warp::reply::with_status(json(&order), StatusCode::OK))
+    Ok(warp::reply::with_status(json(&msg), StatusCode::OK))
 }
 
 /// REST API route handler for deleting a single order

@@ -42,6 +42,10 @@ impl From<outbound::Message> for Message {
                 message: "Book".to_string(),
                 data: MessagePayload::Book(book),
             },
+            outbound::Message::ReadOrder(order) => Self {
+                message: "Order".to_string(),
+                data: MessagePayload::Order(order),
+            },
             outbound::Message::Error(e) => Self {
                 message: "Error".to_string(),
                 data: MessagePayload::String(e.to_string()),
@@ -126,5 +130,6 @@ pub mod outbound {
         Cancelled,
         Error(Error),
         ReadBook(Book),
+        ReadOrder(Order),
     }
 }
