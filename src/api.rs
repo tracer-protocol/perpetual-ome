@@ -1,22 +1,26 @@
 #![allow(dead_code)]
+use ethereum_types::Address;
 use serde::{Deserialize, Serialize};
 
 use crate::book::{Book, Fill, Fills};
 use crate::order::Order;
 
 #[derive(Clone, Debug, Serialize)]
+#[serde(untagged)]
 pub enum MessagePayload {
     Book(Book),
     Order(Order),
     String(String),
     Empty(()),
     Fills(Fills),
+    Books(Vec<Address>),
+    Orders(Vec<Order>),
 }
 
 #[derive(Clone, Debug, Serialize)]
 pub struct Message {
-    message: String,
-    data: MessagePayload,
+    pub message: String,
+    pub data: MessagePayload,
 }
 
 impl From<outbound::Message> for Message {
@@ -49,6 +53,30 @@ impl From<outbound::Message> for Message {
             outbound::Message::Error(e) => Self {
                 message: "Error".to_string(),
                 data: MessagePayload::String(e.to_string()),
+            },
+            outbound::Message::BookCreated => Self {
+                message: "Book Created".to_string(),
+                data: MessagePayload::Empty(()),
+            },
+            outbound::Message::OrderCreated => Self {
+                message: "Order Created".to_string(),
+                data: MessagePayload::Empty(()),
+            },
+            outbound::Message::ListBooks(books) => Self {
+                message: "Books".to_string(),
+                data: MessagePayload::Books(books),
+            },
+            outbound::Message::ListOrders(orders) => Self {
+                message: "Orders".to_string(),
+                data: MessagePayload::Orders(orders),
+            },
+            outbound::Message::OrderDestroyed => Self {
+                message: "Order Destroyed".to_string(),
+                data: MessagePayload::Empty(()),
+            },
+            outbound::Message::BookDestroyed => Self {
+                message: "Book Destroyed".to_string(),
+                data: MessagePayload::Empty(()),
             },
         }
     }
@@ -110,6 +138,7 @@ pub mod outbound {
         NoSuchBook,
         NoSuchOrder,
         InvalidOrder,
+        BookExists,
     }
 
     impl Display for Error {
@@ -118,6 +147,7 @@ pub mod outbound {
                 Self::NoSuchBook => write!(f, "No such book"),
                 Self::NoSuchOrder => write!(f, "No such order"),
                 Self::InvalidOrder => write!(f, "Invalid order"),
+                Self::BookExists => write!(f, "Book already exists"),
             }
         }
     }
@@ -131,5 +161,11 @@ pub mod outbound {
         Error(Error),
         ReadBook(Book),
         ReadOrder(Order),
+        BookCreated,
+        OrderCreated,
+        ListBooks(Vec<Address>),
+        ListOrders(Vec<Order>),
+        BookDestroyed,
+        OrderDestroyed,
     }
 }

@@ -89,12 +89,13 @@ pub type UpdateOrderRequest = CreateOrderRequest;
 /// HEALTH POINT HANDLER
 pub async fn health_check_handler() -> Result<impl Reply, Infallible> {
     let status: StatusCode = http::StatusCode::OK;
-    let resp_body: OmeResponse = OmeResponse {
-        status: status.as_u16(),
+    let msg: api::Message = api::Message {
         message: "Healthy".to_string(),
+        data: api::MessagePayload::Empty(()),
     };
+
     Ok(warp::reply::with_status(
-        warp::reply::json(&resp_body),
+        warp::reply::json(&msg),
         http::StatusCode::OK,
     ))
 }
@@ -105,13 +106,12 @@ pub async fn index_book_handler(
 ) -> Result<impl Reply, Infallible> {
     let ome_state: MutexGuard<OmeState> = state.lock().await;
 
-    let mut result: HashMap<String, Vec<Address>> = HashMap::new();
-    result.insert(
-        "markets".to_string(),
-        ome_state.books().keys().cloned().collect(),
-    );
+    let msg: api::Message =
+        api::Message::from(api::outbound::Message::ListBooks(
+            ome_state.books().keys().cloned().collect(),
+        ));
 
-    Ok(json(&result))
+    Ok(json(&msg))
 }
 
 /// REST API route handler for creating new order books
@@ -130,14 +130,11 @@ pub async fn create_book_handler(
     /* check if the market already exists and, if so, return HTTP 409 */
     if ome_state.book(market).is_some() {
         let status: StatusCode = StatusCode::CONFLICT;
-        let resp_body: OmeResponse = OmeResponse {
-            status: status.as_u16(),
-            message: "Market already exists".to_string(),
-        };
-        return Ok(warp::reply::with_status(
-            warp::reply::json(&resp_body),
-            status,
-        ));
+        let msg: api::Message = api::Message::from(
+            api::outbound::Message::Error(api::outbound::Error::BookExists),
+        );
+
+        return Ok(warp::reply::with_status(warp::reply::json(&msg), status));
     }
 
     /* add the new book to the engine state */
@@ -147,14 +144,10 @@ pub async fn create_book_handler(
 
     /* indicate success to the caller */
     let status: StatusCode = http::StatusCode::CREATED;
-    let resp_body: OmeResponse = OmeResponse {
-        status: status.as_u16(),
-        message: "Market created".to_string(),
-    };
-    Ok(warp::reply::with_status(
-        warp::reply::json(&resp_body),
-        status,
-    ))
+    let msg: api::Message =
+        api::Message::from(api::outbound::Message::BookCreated);
+
+    Ok(warp::reply::with_status(warp::reply::json(&msg), status))
 }
 
 /// REST API route handler for retrieving a single order book
@@ -180,33 +173,18 @@ pub async fn create_order_handler(
     state: Arc<Mutex<OmeState>>,
     rpc_endpoint: String,
 ) -> Result<impl Reply, Rejection> {
-    /* bounds check price and amount */
-    if request.price > U256::from(u128::MAX)
-        || request.amount > U256::from(u128::MAX)
-    {
-        let status: StatusCode = http::StatusCode::BAD_REQUEST;
-        let resp_body: OmeResponse = OmeResponse {
-            status: status.as_u16(),
-            message: "Integer out of bounds".to_string(),
-        };
-        return Ok(warp::reply::with_status(
-            warp::reply::json(&resp_body),
-            status,
-        ));
-    }
-
     let new_order: ExternalOrder = ExternalOrder::from(request);
 
     let internal_order: Order = match Order::try_from(new_order.clone()) {
         Ok(t) => t,
         Err(_e) => {
             let status: StatusCode = StatusCode::BAD_REQUEST;
-            let resp_body: OmeResponse = OmeResponse {
-                status: status.as_u16(),
-                message: "Invalid order".to_string(),
-            };
+            let msg: api::Message =
+                api::Message::from(api::outbound::Message::Error(
+                    api::outbound::Error::InvalidOrder,
+                ));
             return Ok(warp::reply::with_status(
-                warp::reply::json(&resp_body),
+                warp::reply::json(&msg),
                 status,
             ));
         }
@@ -226,12 +204,10 @@ pub async fn create_order_handler(
                 new_order
             );
             let status: StatusCode = warp::http::StatusCode::NOT_FOUND;
-            let resp_body: OmeResponse = OmeResponse {
-                status: status.as_u16(),
-                message: "Market does not exist".to_string(),
-            };
+            let msg: api::Message =
+                api::Message::from(api::outbound::Message::OrderCreated);
             return Ok(warp::reply::with_status(
-                warp::reply::json(&resp_body),
+                warp::reply::json(&msg),
                 status,
             ));
         }
@@ -245,26 +221,14 @@ pub async fn create_order_handler(
         Ok(order_status) => {
             info!("Created order {}", internal_order.clone());
             let status: StatusCode = StatusCode::OK;
-            let resp_body: OmeResponse = OmeResponse {
-                status: status.as_u16(),
-                message: order_status.to_string(),
-            };
-            Ok(warp::reply::with_status(
-                warp::reply::json(&resp_body),
-                status,
-            ))
+            let msg: api::Message =
+                api::Message::from(api::outbound::Message::OrderCreated);
+            Ok(warp::reply::with_status(warp::reply::json(&msg), status))
         }
         Err(e) => {
             warn!("Failed to create order {:?}! Engine said: {}", new_order, e);
             let status: StatusCode = StatusCode::INTERNAL_SERVER_ERROR;
-            let resp_body: OmeResponse = OmeResponse {
-                status: status.as_u16(),
-                message: "Matching error occurred".to_string(),
-            };
-            Ok(warp::reply::with_status(
-                warp::reply::json(&resp_body),
-                status,
-            ))
+            Ok(warp::reply::with_status(warp::reply::json(&()), status))
         }
     }
 }
@@ -305,8 +269,12 @@ pub async fn destroy_order_handler(
         Some(b) => b,
         None => {
             return Ok(warp::reply::with_status(
-                warp::reply::json(&"Market does not exist".to_string()),
-                http::StatusCode::NOT_FOUND,
+                warp::reply::json(&api::Message::from(
+                    api::outbound::Message::Error(
+                        api::outbound::Error::NoSuchBook,
+                    ),
+                )),
+                http::StatusCode::OK,
             )
             .into_response());
         }
@@ -316,10 +284,12 @@ pub async fn destroy_order_handler(
     match book.cancel(id) {
         Ok(_t) => {}
         Err(_e) => {
+            let msg: api::Message =
+                api::Message::from(api::outbound::Message::Error(
+                    api::outbound::Error::NoSuchOrder,
+                ));
             return Ok(warp::reply::with_status(
-                warp::reply::json(
-                    &"Order does not exist in market".to_string(),
-                ),
+                warp::reply::json(&msg),
                 http::StatusCode::NOT_FOUND,
             )
             .into_response());
@@ -327,14 +297,10 @@ pub async fn destroy_order_handler(
     };
 
     let status: StatusCode = http::StatusCode::OK;
-    let resp_body: OmeResponse = OmeResponse {
-        status: status.as_u16(),
-        message: "Order cancelled".to_string(),
-    };
-    Ok(
-        warp::reply::with_status(warp::reply::json(&resp_body), status)
-            .into_response(),
-    )
+    let msg: api::Message =
+        api::Message::from(api::outbound::Message::OrderDestroyed);
+    Ok(warp::reply::with_status(warp::reply::json(&msg), status)
+        .into_response())
 }
 
 #[allow(clippy::into_iter_on_ref)]
@@ -350,12 +316,11 @@ pub async fn market_user_orders_handler(
         Some(b) => b,
         None => {
             let status: StatusCode = StatusCode::NOT_FOUND;
-            let resp_body: OmeResponse = OmeResponse {
-                status: status.as_u16(),
-                message: "Market does not exist".to_string(),
-            };
+            let msg: api::Message = api::Message::from(
+                api::outbound::Message::Error(api::outbound::Error::NoSuchBook),
+            );
             return Ok(warp::reply::with_status(
-                warp::reply::json(&resp_body),
+                warp::reply::json(&msg),
                 status,
             )
             .into_response());
