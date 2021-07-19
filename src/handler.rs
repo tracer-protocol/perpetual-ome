@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::convert::{From, Infallible, TryFrom};
 use std::sync::Arc;
 
@@ -88,7 +87,6 @@ pub type UpdateOrderRequest = CreateOrderRequest;
 
 /// HEALTH POINT HANDLER
 pub async fn health_check_handler() -> Result<impl Reply, Infallible> {
-    let status: StatusCode = http::StatusCode::OK;
     let msg: api::Message = api::Message {
         message: "Healthy".to_string(),
         data: api::MessagePayload::Empty(()),
@@ -218,11 +216,11 @@ pub async fn create_order_handler(
         .submit(Order::try_from(new_order.clone()).unwrap(), rpc_endpoint)
         .await
     {
-        Ok(order_status) => {
+        Ok(_order_status) => {
             info!("Created order {}", internal_order.clone());
             let status: StatusCode = StatusCode::OK;
             let msg: api::Message =
-                api::Message::from(api::outbound::Message::OrderCreated);
+                api::Message::from(api::outbound::Message::OrderCreated); /* TODO: use `order_status` here! */
             Ok(warp::reply::with_status(warp::reply::json(&msg), status))
         }
         Err(e) => {
