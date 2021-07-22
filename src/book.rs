@@ -22,7 +22,7 @@ pub struct Fill {
     pub maker: OrderId,
     pub taker: OrderId,
     pub quantity: Quantity,
-    pub price: U256
+    pub price: U256,
 }
 
 pub type Fills = Vec<Fill>;
@@ -197,7 +197,7 @@ impl Book {
 
     fn build_match_result(
         order_status: OrderStatus,
-        fills: Fills
+        fills: Fills,
     ) -> MatchResult {
         MatchResult {
             fills,
@@ -280,7 +280,12 @@ impl Book {
                 order = Book::fill(order, amount);
                 *opposite = Book::fill(opposite.clone(), amount);
 
-                fills.push(Book::build_fill(opposite.id, order.id, amount, opposite.price));
+                fills.push(Book::build_fill(
+                    opposite.id,
+                    order.id,
+                    amount,
+                    opposite.price,
+                ));
 
                 self.ltp = *price;
                 info!("LTP updated, is now {}", self.ltp);
@@ -343,17 +348,13 @@ impl Book {
     /// in the order book for future matching.
     pub async fn submit(
         &mut self,
-        order: Order
+        order: Order,
     ) -> Result<MatchResult, BookError> {
         info!("Submitting {}...", order);
 
         let match_result: Result<MatchResult, BookError> = match order.side {
-            OrderSide::Bid => {
-                self.r#match(order, self.top().1).await
-            }
-            OrderSide::Ask => {
-                self.r#match(order, self.top().0).await
-            }
+            OrderSide::Bid => self.r#match(order, self.top().1).await,
+            OrderSide::Ask => self.r#match(order, self.top().0).await,
         };
 
         self.update();

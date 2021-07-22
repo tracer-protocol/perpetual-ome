@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, VecDeque};
 use chrono::{DateTime, NaiveDateTime, Utc};
 use ethereum_types::{Address, U256};
 
-use crate::book::{Book, BookError, OrderStatus, MatchResult, Fill};
+use crate::book::{Book, BookError, Fill, MatchResult, OrderStatus};
 use crate::order::{Order, OrderSide};
 
 pub const TEST_RPC_ADDRESS: &str = "http://localhost:3000";
@@ -109,8 +109,7 @@ pub async fn test_simple_buy() {
         vec![],
     );
 
-    let submit_res: Result<MatchResult, BookError> =
-        book.submit(bid).await;
+    let submit_res: Result<MatchResult, BookError> = book.submit(bid).await;
 
     let (bid_length, ask_length) = book.depth();
 
@@ -138,8 +137,7 @@ pub async fn test_simple_buy_partially_filled() {
         vec![],
     );
 
-    let submit_res: Result<MatchResult, BookError> =
-        book.submit(bid).await;
+    let submit_res: Result<MatchResult, BookError> = book.submit(bid).await;
 
     let (bid_length, ask_length) = book.depth();
 
@@ -166,8 +164,7 @@ pub async fn test_simple_sell() {
         vec![],
     );
 
-    let submit_res: Result<MatchResult, BookError> =
-        book.submit(ask).await;
+    let submit_res: Result<MatchResult, BookError> = book.submit(ask).await;
 
     let (bid_length, ask_length) = book.depth();
 
@@ -195,8 +192,7 @@ pub async fn test_simple_sell_partially_filled() {
         vec![],
     );
 
-    let submit_res: Result<MatchResult, BookError> =
-        book.submit(bid).await;
+    let submit_res: Result<MatchResult, BookError> = book.submit(bid).await;
 
     let (bid_length, ask_length) = book.depth();
 
@@ -224,8 +220,7 @@ pub async fn test_deep_buy() {
         vec![],
     );
 
-    let submit_res: Result<MatchResult, BookError> =
-        book.submit(bid).await;
+    let submit_res: Result<MatchResult, BookError> = book.submit(bid).await;
 
     let (bid_length, ask_length) = book.depth();
 
@@ -254,8 +249,7 @@ pub async fn test_no_self_matching() {
         vec![],
     );
 
-    let actual_res: Result<MatchResult, BookError> =
-        book.submit(bid).await;
+    let actual_res: Result<MatchResult, BookError> = book.submit(bid).await;
 
     let (bid_depth, ask_depth) = book.depth();
 
@@ -292,12 +286,9 @@ pub async fn test_no_self_matching_when_last_order() {
         vec![],
     );
 
-    book.submit(ask)
-        .await
-        .unwrap();
+    book.submit(ask).await.unwrap();
 
-    let actual_res: Result<MatchResult, BookError> =
-        book.submit(bid).await;
+    let actual_res: Result<MatchResult, BookError> = book.submit(bid).await;
 
     let (bid_depth, ask_depth) = book.depth();
 
@@ -322,8 +313,7 @@ pub async fn test_deep_buy_with_limit() {
         vec![],
     );
 
-    let submit_res: Result<MatchResult, BookError> =
-        book.submit(bid).await;
+    let submit_res: Result<MatchResult, BookError> = book.submit(bid).await;
 
     let (bid_length, ask_length) = book.depth();
 
@@ -350,8 +340,7 @@ pub async fn test_deep_sell() {
         vec![],
     );
 
-    let submit_res: Result<MatchResult, BookError> =
-        book.submit(ask).await;
+    let submit_res: Result<MatchResult, BookError> = book.submit(ask).await;
 
     let (bid_length, ask_length) = book.depth();
 
@@ -379,8 +368,7 @@ pub async fn test_deep_sell_with_limit() {
         vec![],
     );
 
-    let submit_res: Result<MatchResult, BookError> =
-        book.submit(ask).await;
+    let submit_res: Result<MatchResult, BookError> = book.submit(ask).await;
 
     let (bid_length, ask_length) = book.depth();
 
@@ -442,10 +430,7 @@ pub async fn test_partial_matching_mutability() {
     let mut actual_book: Book = Book::new(market);
 
     for order in orders.iter() {
-        actual_book
-            .submit(order.clone())
-            .await
-            .unwrap();
+        actual_book.submit(order.clone()).await.unwrap();
     }
 
     let expected_book: Book = Book {
@@ -494,10 +479,7 @@ pub async fn test_fills_output_order_placed() {
 
     let mut actual_book: Book = Book::new(market);
 
-    let match_result = actual_book
-            .submit(order.clone())
-            .await
-            .unwrap();
+    let match_result = actual_book.submit(order.clone()).await.unwrap();
 
     assert_eq!(match_result.order_status, OrderStatus::Placed);
     assert!(match_result.fills.is_empty());
@@ -536,16 +518,13 @@ pub async fn test_fills_output_taker_partially_matched_multiple_makers() {
             the_far_future,
             Utc::now(),
             vec![],
-        )
+        ),
     ];
 
     let mut actual_book: Book = Book::new(market);
 
     for order in orders.iter() {
-        actual_book
-            .submit(order.clone())
-            .await
-            .unwrap();
+        actual_book.submit(order.clone()).await.unwrap();
     }
 
     // Long @ $1 for 1
@@ -560,10 +539,7 @@ pub async fn test_fills_output_taker_partially_matched_multiple_makers() {
         vec![],
     );
 
-    let match_result = actual_book
-            .submit(order.clone())
-            .await
-            .unwrap();
+    let match_result = actual_book.submit(order.clone()).await.unwrap();
 
     assert_eq!(match_result.order_status, OrderStatus::PartialMatch);
 
@@ -572,13 +548,13 @@ pub async fn test_fills_output_taker_partially_matched_multiple_makers() {
             maker: orders[0].id,
             taker: order.id,
             price: U256::from_dec_str("1000000000000000000").unwrap(),
-            quantity: U256::from_dec_str("0500000000000000000").unwrap()
+            quantity: U256::from_dec_str("0500000000000000000").unwrap(),
         },
         Fill {
             maker: orders[1].id,
             taker: order.id,
             price: U256::from_dec_str("1000000000000000000").unwrap(),
-            quantity: U256::from_dec_str("0250000000000000000").unwrap()
+            quantity: U256::from_dec_str("0250000000000000000").unwrap(),
         },
     ];
 
@@ -618,16 +594,13 @@ pub async fn test_fills_output_taker_fully_matched_multiple_makers() {
             the_far_future,
             Utc::now(),
             vec![],
-        )
+        ),
     ];
 
     let mut actual_book: Book = Book::new(market);
 
     for order in orders.iter() {
-        actual_book
-            .submit(order.clone())
-            .await
-            .unwrap();
+        actual_book.submit(order.clone()).await.unwrap();
     }
 
     // Long @ $1 for 1
@@ -642,10 +615,7 @@ pub async fn test_fills_output_taker_fully_matched_multiple_makers() {
         vec![],
     );
 
-    let match_result = actual_book
-            .submit(order.clone())
-            .await
-            .unwrap();
+    let match_result = actual_book.submit(order.clone()).await.unwrap();
 
     assert_eq!(match_result.order_status, OrderStatus::FullMatch);
 
@@ -654,13 +624,13 @@ pub async fn test_fills_output_taker_fully_matched_multiple_makers() {
             maker: orders[0].id,
             taker: order.id,
             price: U256::from_dec_str("1000000000000000000").unwrap(),
-            quantity: U256::from_dec_str("0500000000000000000").unwrap()
+            quantity: U256::from_dec_str("0500000000000000000").unwrap(),
         },
         Fill {
             maker: orders[1].id,
             taker: order.id,
             price: U256::from_dec_str("1000000000000000000").unwrap(),
-            quantity: U256::from_dec_str("0500000000000000000").unwrap()
+            quantity: U256::from_dec_str("0500000000000000000").unwrap(),
         },
     ];
 
@@ -678,27 +648,21 @@ pub async fn test_fills_output_taker_fully_matched_single_maker() {
     );
     let market: Address = Address::zero();
 
-    let orders: Vec<Order> = vec![
-        /* SHORT @ $1 for 0.5 */
-        Order::new(
-            traders[0],
-            market,
-            OrderSide::Ask,
-            U256::from_dec_str("1000000000000000000").unwrap(),
-            U256::from_dec_str("1500000000000000000").unwrap(),
-            the_far_future,
-            Utc::now(),
-            vec![],
-        ),
-    ];
+    let orders: Vec<Order> = vec![/* SHORT @ $1 for 0.5 */ Order::new(
+        traders[0],
+        market,
+        OrderSide::Ask,
+        U256::from_dec_str("1000000000000000000").unwrap(),
+        U256::from_dec_str("1500000000000000000").unwrap(),
+        the_far_future,
+        Utc::now(),
+        vec![],
+    )];
 
     let mut actual_book: Book = Book::new(market);
 
     for order in orders.iter() {
-        actual_book
-            .submit(order.clone())
-            .await
-            .unwrap();
+        actual_book.submit(order.clone()).await.unwrap();
     }
 
     // Long @ $1 for 1
@@ -713,21 +677,16 @@ pub async fn test_fills_output_taker_fully_matched_single_maker() {
         vec![],
     );
 
-    let match_result = actual_book
-            .submit(order.clone())
-            .await
-            .unwrap();
+    let match_result = actual_book.submit(order.clone()).await.unwrap();
 
     assert_eq!(match_result.order_status, OrderStatus::FullMatch);
 
-    let expected_fills: Vec<Fill> = vec![
-        Fill {
-            maker: orders[0].id,
-            taker: order.id,
-            price: U256::from_dec_str("1000000000000000000").unwrap(),
-            quantity: U256::from_dec_str("1000000000000000000").unwrap()
-        },
-    ];
+    let expected_fills: Vec<Fill> = vec![Fill {
+        maker: orders[0].id,
+        taker: order.id,
+        price: U256::from_dec_str("1000000000000000000").unwrap(),
+        quantity: U256::from_dec_str("1000000000000000000").unwrap(),
+    }];
 
     assert!(do_vecs_match(&match_result.fills, &expected_fills));
 }

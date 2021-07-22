@@ -2,7 +2,7 @@
 use ethereum_types::Address;
 use serde::{Deserialize, Serialize};
 
-use crate::book::{Book, Fill, Fills, OrderStatus, MatchResult};
+use crate::book::{Book, Fill, Fills, MatchResult, OrderStatus};
 use crate::order::Order;
 
 #[derive(Clone, Debug, Serialize)]
@@ -27,8 +27,12 @@ impl From<MatchResult> for outbound::Message {
     fn from(match_result: MatchResult) -> Self {
         match match_result.order_status {
             OrderStatus::Placed => outbound::Message::Placed,
-            OrderStatus::PartialMatch => outbound::Message::PartialMatch(match_result.fills),
-            OrderStatus::FullMatch => outbound::Message::FullMatch(match_result.fills),
+            OrderStatus::PartialMatch => {
+                outbound::Message::PartialMatch(match_result.fills)
+            }
+            OrderStatus::FullMatch => {
+                outbound::Message::FullMatch(match_result.fills)
+            }
         }
     }
 }
