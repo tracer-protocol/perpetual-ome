@@ -17,12 +17,12 @@ use web3::types::Address;
 use crate::order::{ExternalOrder, Order, OrderId, OrderSide, Quantity};
 use crate::util::{from_hex_de, from_hex_se};
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Fill {
-    maker: OrderId,
-    taker: OrderId,
-    quantity: Quantity,
-    price: U256
+    pub maker: OrderId,
+    pub taker: OrderId,
+    pub quantity: Quantity,
+    pub price: U256
 }
 
 pub type Fills = Vec<Fill>;
@@ -223,7 +223,6 @@ impl Book {
     async fn r#match(
         &mut self,
         mut order: Order,
-        _executioner_address: String,
         opposing_top: Option<U256>,
     ) -> Result<MatchResult, BookError> {
         info!("Matching {}...", order);
@@ -344,17 +343,16 @@ impl Book {
     /// in the order book for future matching.
     pub async fn submit(
         &mut self,
-        order: Order,
-        executioner_address: String,
+        order: Order
     ) -> Result<MatchResult, BookError> {
         info!("Submitting {}...", order);
 
         let match_result: Result<MatchResult, BookError> = match order.side {
             OrderSide::Bid => {
-                self.r#match(order, executioner_address, self.top().1).await
+                self.r#match(order, self.top().1).await
             }
             OrderSide::Ask => {
-                self.r#match(order, executioner_address, self.top().0).await
+                self.r#match(order, self.top().0).await
             }
         };
 

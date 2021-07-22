@@ -169,7 +169,6 @@ pub async fn create_order_handler(
     market: Address,
     request: CreateOrderRequest,
     state: Arc<Mutex<OmeState>>,
-    rpc_endpoint: String,
 ) -> Result<impl Reply, Rejection> {
     let new_order: ExternalOrder = ExternalOrder::from(request);
 
@@ -213,7 +212,7 @@ pub async fn create_order_handler(
 
     /* submit order to the engine for matching */
     match book
-        .submit(Order::try_from(new_order.clone()).unwrap(), rpc_endpoint)
+        .submit(Order::try_from(new_order.clone()).unwrap())
         .await
     {
         Ok(match_result) => {
