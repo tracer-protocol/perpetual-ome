@@ -17,6 +17,7 @@ extern crate enum_display_derive;
 extern crate log;
 extern crate pretty_env_logger;
 
+pub mod api;
 pub mod args;
 pub mod book;
 pub mod handler;
