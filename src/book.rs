@@ -22,6 +22,7 @@ pub struct Fill {
     maker: OrderId,
     taker: OrderId,
     quantity: Quantity,
+    price: U256
 }
 
 pub type Fills = Vec<Fill>;
@@ -67,9 +68,14 @@ impl From<ethabi::Error> for BookError {
     Clone, Copy, Debug, Display, Error, Serialize, Deserialize, PartialEq, Eq,
 )]
 pub enum OrderStatus {
-    Add,
+    Placed,
     PartialMatch,
     FullMatch,
+}
+
+pub struct MatchResult {
+    pub fills: Fills,
+    pub order_status: OrderStatus,
 }
 
 impl Book {
@@ -189,14 +195,40 @@ impl Book {
         }
     }
 
+    fn build_match_result(
+        order_status: OrderStatus,
+        fills: Fills
+    ) -> MatchResult {
+        MatchResult {
+            fills,
+            order_status,
+        }
+    }
+
+    fn build_fill(
+        maker: OrderId,
+        taker: OrderId,
+        quantity: Quantity,
+        price: U256,
+    ) -> Fill {
+        Fill {
+            maker,
+            taker,
+            quantity,
+            price,
+        }
+    }
+
     #[allow(unused_must_use)]
     async fn r#match(
         &mut self,
         mut order: Order,
         _executioner_address: String,
         opposing_top: Option<U256>,
-    ) -> Result<OrderStatus, BookError> {
+    ) -> Result<MatchResult, BookError> {
         info!("Matching {}...", order);
+
+        let mut fills: Fills = Vec::new();
 
         let opposing_side: &mut BTreeMap<U256, VecDeque<Order>> =
             match order.side {
@@ -216,7 +248,7 @@ impl Book {
         {
             info!("{} does not cross, adding...", order);
             self.add_order(order);
-            return Ok(OrderStatus::Add);
+            return Ok(Book::build_match_result(OrderStatus::Placed, fills));
         }
 
         let opposing_side_iterator = match order.side {
@@ -249,6 +281,8 @@ impl Book {
                 order = Book::fill(order, amount);
                 *opposite = Book::fill(opposite.clone(), amount);
 
+                fills.push(Book::build_fill(opposite.id, order.id, amount, opposite.price));
+
                 self.ltp = *price;
                 info!("LTP updated, is now {}", self.ltp);
 
@@ -266,9 +300,9 @@ impl Book {
         /* if our incoming order has any volume left, add it to the book */
         if running_total > U256::zero() {
             self.add_order(order);
-            Ok(OrderStatus::PartialMatch)
+            Ok(Book::build_match_result(OrderStatus::PartialMatch, fills))
         } else {
-            Ok(OrderStatus::FullMatch)
+            Ok(Book::build_match_result(OrderStatus::FullMatch, fills))
         }
     }
 
@@ -312,10 +346,10 @@ impl Book {
         &mut self,
         order: Order,
         executioner_address: String,
-    ) -> Result<OrderStatus, BookError> {
+    ) -> Result<MatchResult, BookError> {
         info!("Submitting {}...", order);
 
-        let match_result: Result<OrderStatus, BookError> = match order.side {
+        let match_result: Result<MatchResult, BookError> = match order.side {
             OrderSide::Bid => {
                 self.r#match(order, executioner_address, self.top().1).await
             }
