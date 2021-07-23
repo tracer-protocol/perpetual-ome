@@ -15,8 +15,6 @@ pub const DEFAULT_PORT: &str = "8989";
 /// The default file path for reading and writing state dumps
 pub const DEFAULT_DUMPFILE: &str = ".omedump.json";
 
-pub const DEFAULT_EXECUTIONER: &str = "http://localhost:3000";
-
 pub const DEFAULT_CERTFILE: &str = "cert.pem";
 pub const DEFAULT_KEYFILE: &str = "pkey.secret";
 
@@ -26,7 +24,6 @@ pub const DEFAULT_TLS_TOGGLE: bool = false;
 pub struct Arguments {
     pub listen_address: IpAddr,
     pub listen_port: u16,
-    pub executioner_address: String,
     pub dumpfile_path: PathBuf,
     pub certificate_path: PathBuf,
     pub private_key_path: PathBuf,
@@ -40,7 +37,6 @@ impl TryFrom<ArgMatches<'_>> for Arguments {
         /* start with the hardcoded values as defaults */
         let mut listen_address: IpAddr = IpAddr::from_str(DEFAULT_IP).unwrap();
         let mut listen_port: u16 = DEFAULT_PORT.parse::<u16>().unwrap();
-        let mut executioner_address: String = DEFAULT_EXECUTIONER.to_string();
         let mut dumpfile_path: PathBuf = DEFAULT_DUMPFILE.into();
         let mut certificate_path: PathBuf = DEFAULT_CERTFILE.into();
         let mut private_key_path: PathBuf = DEFAULT_KEYFILE.into();
@@ -76,16 +72,6 @@ impl TryFrom<ArgMatches<'_>> for Arguments {
                     Ok(p) => listen_port = p,
                     Err(_err) => return Err("Invalid listening port"),
                 },
-                Err(_e) => {}
-            }
-        }
-
-        /* handle executioner address */
-        if let Some(t) = value.value_of("executioner_address") {
-            executioner_address = t.to_string();
-        } else {
-            match env::var("OME_EXECUTIONER_ADDRESS") {
-                Ok(t) => executioner_address = t,
                 Err(_e) => {}
             }
         }
@@ -128,7 +114,6 @@ impl TryFrom<ArgMatches<'_>> for Arguments {
         Ok(Self {
             listen_address,
             listen_port,
-            executioner_address,
             dumpfile_path,
             certificate_path,
             private_key_path,

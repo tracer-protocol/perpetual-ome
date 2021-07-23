@@ -169,7 +169,6 @@ pub async fn create_order_handler(
     market: Address,
     request: CreateOrderRequest,
     state: Arc<Mutex<OmeState>>,
-    rpc_endpoint: String,
 ) -> Result<impl Reply, Rejection> {
     let new_order: ExternalOrder = ExternalOrder::from(request);
 
@@ -213,14 +212,14 @@ pub async fn create_order_handler(
 
     /* submit order to the engine for matching */
     match book
-        .submit(Order::try_from(new_order.clone()).unwrap(), rpc_endpoint)
+        .submit(Order::try_from(new_order.clone()).unwrap())
         .await
     {
-        Ok(_order_status) => {
+        Ok(match_result) => {
             info!("Created order {}", internal_order.clone());
             let status: StatusCode = StatusCode::OK;
             let msg: api::Message =
-                api::Message::from(api::outbound::Message::OrderCreated); /* TODO: use `order_status` here! */
+                api::Message::from(api::outbound::Message::from(match_result));
             Ok(warp::reply::with_status(warp::reply::json(&msg), status))
         }
         Err(e) => {

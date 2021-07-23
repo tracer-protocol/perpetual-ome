@@ -64,13 +64,6 @@ async fn main() {
                 .takes_value(true),
         )
         .arg(
-            Arg::with_name("executioner_address")
-                .long("executioner_address")
-                .value_name("executioner_address")
-                .help("Address of the Web3 executioner")
-                .takes_value(true),
-        )
-        .arg(
             Arg::with_name("certificate_path")
                 .long("certificate_path")
                 .value_name("certificate_path")
@@ -143,12 +136,10 @@ async fn main() {
         .and_then(handler::read_book_handler);
 
     /* define CRUD routes for orders */
-    let tmp_args: Arguments = arguments.clone();
     let create_order_route = warp::path!("book" / Address / "order")
         .and(warp::post())
         .and(warp::body::json())
         .and(warp::any().map(move || create_order_state.clone()))
-        .and(warp::any().map(move || tmp_args.executioner_address.clone()))
         .and_then(handler::create_order_handler);
     let read_order_route = warp::path!("book" / Address / "order" / OrderId)
         .and(warp::get())
