@@ -72,8 +72,8 @@ impl From<outbound::Message> for Message {
                 message: "Book Created".to_string(),
                 data: MessagePayload::Empty(()),
             },
-            outbound::Message::OrderCreated => Self {
-                message: "Order Created".to_string(),
+            outbound::Message::BookNotFound => Self {
+                message: "Book Not Found".to_string(),
                 data: MessagePayload::Empty(()),
             },
             outbound::Message::ListBooks(books) => Self {
@@ -176,7 +176,7 @@ pub mod outbound {
         ReadBook(Book),
         ReadOrder(Order),
         BookCreated,
-        OrderCreated,
+        BookNotFound,
         ListBooks(Vec<Address>),
         ListOrders(Vec<Order>),
         BookDestroyed,

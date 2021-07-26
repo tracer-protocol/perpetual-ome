@@ -202,7 +202,7 @@ pub async fn create_order_handler(
             );
             let status: StatusCode = warp::http::StatusCode::NOT_FOUND;
             let msg: api::Message =
-                api::Message::from(api::outbound::Message::OrderCreated);
+                api::Message::from(api::outbound::Message::BookNotFound);
             return Ok(warp::reply::with_status(
                 warp::reply::json(&msg),
                 status,
