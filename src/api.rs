@@ -3,7 +3,7 @@ use ethereum_types::Address;
 use serde::{Deserialize, Serialize};
 
 use crate::book::{Book, Fill, Fills, MatchResult, OrderStatus};
-use crate::order::Order;
+use crate::order::{Order, ExternalOrder};
 
 #[derive(Clone, Debug, Serialize)]
 #[serde(untagged)]
@@ -14,7 +14,7 @@ pub enum MessagePayload {
     Empty(()),
     Fills(Fills),
     Books(Vec<Address>),
-    Orders(Vec<Order>),
+    Orders(Vec<ExternalOrder>),
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -178,7 +178,7 @@ pub mod outbound {
         BookCreated,
         BookNotFound,
         ListBooks(Vec<Address>),
-        ListOrders(Vec<Order>),
+        ListOrders(Vec<ExternalOrder>),
         BookDestroyed,
         OrderDestroyed,
     }

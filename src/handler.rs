@@ -347,5 +347,9 @@ pub async fn market_user_orders_handler(
         .map(ExternalOrder::from)
         .collect();
 
-    Ok(json(&orders).into_response())
+    let status: StatusCode = http::StatusCode::OK;
+    let msg: api::Message =
+        api::Message::from(api::outbound::Message::ListOrders(orders));
+    Ok(warp::reply::with_status(warp::reply::json(&msg), status)
+        .into_response())
 }
