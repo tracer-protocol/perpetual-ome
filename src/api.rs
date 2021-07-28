@@ -41,55 +41,55 @@ impl From<outbound::Message> for Message {
     fn from(msg: outbound::Message) -> Self {
         match msg {
             outbound::Message::Placed => Self {
-                message: "Placed".to_string(),
+                message: "order_placed".to_string(),
                 data: MessagePayload::Empty(()),
             },
             outbound::Message::PartialMatch(fills) => Self {
-                message: "Partially Matched".to_string(),
+                message: "order_partially_matched".to_string(),
                 data: MessagePayload::Fills(fills),
             },
             outbound::Message::FullMatch(fills) => Self {
-                message: "Fully Matched".to_string(),
+                message: "order_fully_matched".to_string(),
                 data: MessagePayload::Fills(fills),
             },
             outbound::Message::Cancelled => Self {
-                message: "Cancelled".to_string(),
+                message: "order_cancelled".to_string(),
                 data: MessagePayload::Empty(()),
             },
             outbound::Message::ReadBook(book) => Self {
-                message: "Book".to_string(),
+                message: "book".to_string(),
                 data: MessagePayload::Book(book),
             },
             outbound::Message::ReadOrder(order) => Self {
-                message: "Order".to_string(),
+                message: "order".to_string(),
                 data: MessagePayload::Order(order),
             },
             outbound::Message::Error(e) => Self {
-                message: "Error".to_string(),
+                message: "error".to_string(),
                 data: MessagePayload::String(e.to_string()),
             },
             outbound::Message::BookCreated => Self {
-                message: "Book Created".to_string(),
+                message: "book_created".to_string(),
                 data: MessagePayload::Empty(()),
             },
             outbound::Message::BookNotFound => Self {
-                message: "Book Not Found".to_string(),
+                message: "book_not_found".to_string(),
                 data: MessagePayload::Empty(()),
             },
             outbound::Message::ListBooks(books) => Self {
-                message: "Books".to_string(),
+                message: "books".to_string(),
                 data: MessagePayload::Books(books),
             },
             outbound::Message::ListOrders(orders) => Self {
-                message: "Orders".to_string(),
+                message: "orders".to_string(),
                 data: MessagePayload::Orders(orders),
             },
             outbound::Message::OrderDestroyed => Self {
-                message: "Order Destroyed".to_string(),
+                message: "order_cancelled".to_string(),
                 data: MessagePayload::Empty(()),
             },
             outbound::Message::BookDestroyed => Self {
-                message: "Book Destroyed".to_string(),
+                message: "book_destroyed".to_string(),
                 data: MessagePayload::Empty(()),
             },
         }
@@ -158,10 +158,10 @@ pub mod outbound {
     impl Display for Error {
         fn fmt(&self, f: &mut Formatter) -> fmt::Result {
             match self {
-                Self::NoSuchBook => write!(f, "No such book"),
-                Self::NoSuchOrder => write!(f, "No such order"),
-                Self::InvalidOrder => write!(f, "Invalid order"),
-                Self::BookExists => write!(f, "Book already exists"),
+                Self::NoSuchBook => write!(f, "book_not_found"),
+                Self::NoSuchOrder => write!(f, "order_not_found"),
+                Self::InvalidOrder => write!(f, "invalid_order"),
+                Self::BookExists => write!(f, "book_exists"),
             }
         }
     }
