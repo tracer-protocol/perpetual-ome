@@ -13,6 +13,51 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use web3::types::{Address, H256, U256};
 
+// Wrapper for the web3::Address type such that strings can be passed to
+// handlers with and without the 0x prefix
+#[derive(PartialEq, Copy, Clone)]
+pub struct AddressWrapper(Address);
+
+pub enum AddressWrapperError {
+    NotValidPrefixError,
+    NotValidAddressError,
+}
+
+impl FromStr for AddressWrapper {
+    type Err = AddressWrapperError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let prefix: &str = "0x";
+        if let Some(t) = s.strip_prefix(prefix) {
+            Ok(Self(match Address::from_str(t) {
+                Ok(x) => x,
+                Err(_e) => {
+                    return Err(AddressWrapperError::NotValidPrefixError)
+                }
+            }))
+        } else {
+            Ok(Self(match Address::from_str(s) {
+                Ok(t) => t,
+                Err(_e) => {
+                    return Err(AddressWrapperError::NotValidAddressError)
+                }
+            }))
+        }
+    }
+}
+
+impl fmt::Display for AddressWrapper {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
+        write!(f, "{}", Address::to_string(&self.0))
+    }
+}
+
+impl From<AddressWrapper> for Address {
+    fn from(s: AddressWrapper) -> Address {
+        s.0
+    }
+}
+
 pub type OrderId = H256;
 pub type Quantity = U256;
 

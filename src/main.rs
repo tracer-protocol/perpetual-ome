@@ -8,7 +8,6 @@ use std::sync::Arc;
 use clap::{App, Arg};
 use tokio::sync::Mutex;
 use warp::Filter;
-use web3::types::Address;
 
 #[macro_use]
 extern crate enum_display_derive;
@@ -30,7 +29,7 @@ pub mod util;
 pub mod book_tests;
 
 use crate::args::Arguments;
-use crate::order::OrderId;
+use crate::order::{AddressWrapper, OrderId};
 use crate::state::OmeState;
 
 #[tokio::main]
@@ -130,7 +129,7 @@ async fn main() {
         .and(warp::body::json())
         .and(warp::any().map(move || create_book_state.clone()))
         .and_then(handler::create_book_handler);
-    let read_book_route = warp::path!("book" / Address)
+    let read_book_route = warp::path!("book" / AddressWrapper)
         .and(warp::get())
         .and(warp::any().map(move || read_book_state.clone()))
         .and_then(handler::read_book_handler);
@@ -141,19 +140,22 @@ async fn main() {
         .and(warp::body::json())
         .and(warp::any().map(move || create_order_state.clone()))
         .and_then(handler::create_order_handler);
-    let read_order_route = warp::path!("book" / Address / "order" / OrderId)
-        .and(warp::get())
-        .and(warp::any().map(move || read_order_state.clone()))
-        .and_then(handler::read_order_handler);
-    let destroy_order_route = warp::path!("book" / Address / "order" / OrderId)
-        .and(warp::delete())
-        .and(warp::any().map(move || destroy_order_state.clone()))
-        .and_then(handler::destroy_order_handler);
+    let read_order_route =
+        warp::path!("book" / AddressWrapper / "order" / OrderId)
+            .and(warp::get())
+            .and(warp::any().map(move || read_order_state.clone()))
+            .and_then(handler::read_order_handler);
+    let destroy_order_route =
+        warp::path!("book" / AddressWrapper / "order" / OrderId)
+            .and(warp::delete())
+            .and(warp::any().map(move || destroy_order_state.clone()))
+            .and_then(handler::destroy_order_handler);
 
-    let market_user_orders_route = warp::path!("book" / Address / Address)
-        .and(warp::get())
-        .and(warp::any().map(move || market_user_orders_state.clone()))
-        .and_then(handler::market_user_orders_handler);
+    let market_user_orders_route =
+        warp::path!("book" / AddressWrapper / AddressWrapper)
+            .and(warp::get())
+            .and(warp::any().map(move || market_user_orders_state.clone()))
+            .and_then(handler::market_user_orders_handler);
 
     // Healthcheck
     let health_route = warp::path::end()
