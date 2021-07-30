@@ -36,6 +36,11 @@ use crate::state::OmeState;
 async fn main() {
     pretty_env_logger::init();
 
+    // make request to api to get all known markets
+    // for each known market
+        // fetch the orderbook state from the api (api must return a valid ExternalBook)
+        // convert the ExternalBook to Book and store in the OME
+
     /* define our command-line interface using Clap's builder syntax */
     let matches = App::new("Tracer OME")
         .version("0.1.0")
@@ -135,7 +140,7 @@ async fn main() {
         .and_then(handler::read_book_handler);
 
     /* define CRUD routes for orders */
-    let create_order_route = warp::path!("book" / Address / "order")
+    let create_order_route = warp::path!("book" / AddressWrapper / "order")
         .and(warp::post())
         .and(warp::body::json())
         .and(warp::any().map(move || create_order_state.clone()))

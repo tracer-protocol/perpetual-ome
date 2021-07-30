@@ -154,7 +154,7 @@ pub async fn read_book_handler(
     state: Arc<Mutex<OmeState>>,
 ) -> Result<impl Reply, Rejection> {
     let msg: api::Message =
-        api::Message::from(match state.lock().await.book(market) {
+        api::Message::from(match state.lock().await.book(Address::from(market)) {
             Some(t) => api::outbound::Message::ReadBook(t.clone()),
             None => {
                 api::outbound::Message::Error(api::outbound::Error::NoSuchBook)
@@ -238,7 +238,7 @@ pub async fn read_order_handler(
 ) -> Result<impl Reply, Rejection> {
     let ome_state: MutexGuard<OmeState> = state.lock().await;
 
-    let msg: api::Message = api::Message::from(match ome_state.book(market) {
+    let msg: api::Message = api::Message::from(match ome_state.book(Address::from(market)) {
         Some(book) => match book.order(id) {
             Some(order) => api::outbound::Message::ReadOrder(order.clone()),
             None => {

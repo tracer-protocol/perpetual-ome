@@ -3,8 +3,10 @@ use std::collections::{BTreeMap, VecDeque};
 use chrono::{DateTime, NaiveDateTime, Utc};
 use ethereum_types::{Address, U256};
 
-use crate::book::{Book, BookError, Fill, MatchResult, OrderStatus};
+use crate::book::{Book, ExternalBook, BookError, Fill, MatchResult, OrderStatus};
 use crate::order::{Order, OrderSide};
+
+use std::convert::TryFrom;
 
 pub const TEST_RPC_ADDRESS: &str = "http://localhost:3000";
 
@@ -689,4 +691,71 @@ pub async fn test_fills_output_taker_fully_matched_single_maker() {
     }];
 
     assert!(do_vecs_match(&match_result.fills, &expected_fills));
+}
+
+#[tokio::test]
+pub async fn test_converting_book_to_external_book_and_back() {
+    /* need at least three for this test */
+    let traders: Vec<Address> =
+        vec![Address::random(), Address::random(), Address::random()];
+    let the_far_future: DateTime<Utc> = DateTime::<Utc>::from_utc(
+        NaiveDateTime::from_timestamp(1699025703, 0),
+        Utc,
+    );
+
+    let now_unix: DateTime<Utc> = DateTime::<Utc>::from_utc(
+        NaiveDateTime::from_timestamp(Utc::now().timestamp(), 0),
+        Utc,
+    );
+
+    let market: Address = Address::random();
+
+    let orders: Vec<Order> = vec![
+        /* SHORT @ $1.15 for 1.2 */
+        Order::new(
+            traders[0],
+            market,
+            OrderSide::Ask,
+            U256::from_dec_str("1150000000000000000").unwrap(),
+            U256::from_dec_str("1200000000000000000").unwrap(),
+            the_far_future,
+            now_unix,
+            vec![25, 44],
+        ),
+        /* LONG @ $1.20 for 1 */
+        Order::new(
+            traders[1],
+            market,
+            OrderSide::Bid,
+            U256::from_dec_str("1200000000000000000").unwrap(),
+            U256::from_dec_str("1000000000000000000").unwrap(),
+            the_far_future,
+            now_unix,
+            vec![25, 42],
+        ),
+        /* LONG @ $1.20 for 1 */
+        Order::new(
+            traders[2],
+            market,
+            OrderSide::Bid,
+            U256::from_dec_str("1200000000000000000").unwrap(),
+            U256::from_dec_str("1000000000000000000").unwrap(),
+            the_far_future,
+            now_unix,
+            vec![35, 44],
+        ),
+    ];
+
+    let mut actual_book: Book = Book::new(market);
+
+    for order in orders.iter() {
+        actual_book.submit(order.clone()).await.unwrap();
+    }
+
+    let external_book = ExternalBook::from(actual_book.clone());
+
+
+    let converted_book = Book::try_from(external_book);
+
+    assert_eq!(actual_book, converted_book.unwrap());
 }
