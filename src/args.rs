@@ -12,22 +12,23 @@ pub const DEFAULT_IP: &str = "0.0.0.0";
 /// The default TCP port number that the OME will listen on
 pub const DEFAULT_PORT: &str = "8989";
 
-/// The default file path for reading and writing state dumps
-pub const DEFAULT_DUMPFILE: &str = ".omedump.json";
-
 pub const DEFAULT_CERTFILE: &str = "cert.pem";
 pub const DEFAULT_KEYFILE: &str = "pkey.secret";
 
 pub const DEFAULT_TLS_TOGGLE: bool = false;
 
+pub const DEFAULT_KNOWN_MARKETS_URL: &str = "http://localhost:3030/book";
+pub const DEFAULT_EXTERNAL_BOOK_URL: &str = "http://localhost:3030/book/";
+
 #[derive(Clone, Debug)]
 pub struct Arguments {
     pub listen_address: IpAddr,
     pub listen_port: u16,
-    pub dumpfile_path: PathBuf,
     pub certificate_path: PathBuf,
     pub private_key_path: PathBuf,
     pub force_no_tls: bool,
+    pub known_markets_url: String,
+    pub external_book_url: String,
 }
 
 impl TryFrom<ArgMatches<'_>> for Arguments {
@@ -37,10 +38,11 @@ impl TryFrom<ArgMatches<'_>> for Arguments {
         /* start with the hardcoded values as defaults */
         let mut listen_address: IpAddr = IpAddr::from_str(DEFAULT_IP).unwrap();
         let mut listen_port: u16 = DEFAULT_PORT.parse::<u16>().unwrap();
-        let mut dumpfile_path: PathBuf = DEFAULT_DUMPFILE.into();
         let mut certificate_path: PathBuf = DEFAULT_CERTFILE.into();
         let mut private_key_path: PathBuf = DEFAULT_KEYFILE.into();
         let mut force_no_tls: bool = DEFAULT_TLS_TOGGLE;
+        let mut known_markets_url: String = DEFAULT_KNOWN_MARKETS_URL.to_string();
+        let mut external_book_url: String = DEFAULT_EXTERNAL_BOOK_URL.to_string();
 
         /* handle listening address */
         if let Some(t) = value.value_of("listen") {
@@ -76,11 +78,6 @@ impl TryFrom<ArgMatches<'_>> for Arguments {
             }
         }
 
-        /* handle dumpfile path */
-        if let Some(t) = value.value_of("dumpfile_path") {
-            dumpfile_path = t.into();
-        };
-
         /* handle TLS certificate path */
         if let Some(t) = value.value_of("certificate_path") {
             certificate_path = t.into();
@@ -111,13 +108,35 @@ impl TryFrom<ArgMatches<'_>> for Arguments {
             }
         }
 
+        /* handle known markets url */
+        if let Some(t) = value.value_of("known_markets_url") {
+            known_markets_url = t.to_string();
+        } else {
+            match env::var("KNOWN_MARKETS_URL") {
+                Ok(t) => known_markets_url = t,
+                Err(_e) => return Err("Invalid known markets url")
+            }
+        }
+
+        /* handle external book url */
+        if let Some(t) = value.value_of("external_book_url") {
+            external_book_url = t.to_string();
+        } else {
+            match env::var("EXTERNAL_BOOK_URL") {
+                Ok(t) => external_book_url = t,
+                Err(_e) => return Err("Invalid external book url")
+            }
+        }
+
+
         Ok(Self {
             listen_address,
             listen_port,
-            dumpfile_path,
             certificate_path,
             private_key_path,
             force_no_tls,
+            known_markets_url,
+            external_book_url,
         })
     }
 }

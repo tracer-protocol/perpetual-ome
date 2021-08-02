@@ -21,10 +21,10 @@ To run the OME, with the executioner running locally, use
 
 ## ENV Variables
 The OME supports the following ENV variables
-- executioner_address: The IP address of the executioner instance
+- known_markets_url: an endpoint which will return a list of known markets upon a GET request
+- external_book_url: an endpoint which will return an external book upon a GET request. marketId will be concatenated to this url
 - port: The listening port of the OME
 - address: The listening address of the OME
-- dumpfile: The filepath to dump all orders on shutdown
 
 ## Deployment
 To deploy changes to GCP, use the following.

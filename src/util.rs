@@ -45,7 +45,3 @@ where
 pub fn is_existing_state(path: &Path) -> bool {
     path.exists()
 }
-
-pub fn dump_state(state: Arc<Mutex<OmeState>>, path: &Path) {
-    fs::write(path, serde_json::to_string(&state).unwrap()).unwrap()
-}

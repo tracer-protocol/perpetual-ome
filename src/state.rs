@@ -22,18 +22,6 @@ impl OmeState {
         }
     }
 
-    pub fn from_dumpfile(path: &Path) -> Option<Self> {
-        let dump_data: String = match read_to_string(path) {
-            Ok(t) => t,
-            Err(_e) => return None,
-        };
-
-        match serde_json::from_str(&dump_data) {
-            Ok(t) => Some(t),
-            Err(_e) => None,
-        }
-    }
-
     /// Returns a reference to the mapping from tickers to `Book` types
     /// themselves.
     pub fn books(&self) -> &HashMap<Address, Book> {

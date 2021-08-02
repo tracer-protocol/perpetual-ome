@@ -2,7 +2,7 @@
 #![feature(async_closure)]
 #![feature(result_contains_err)]
 #![feature(destructuring_assignment)]
-use std::convert::TryInto;
+use std::convert::{TryInto, TryFrom};
 use std::sync::Arc;
 
 use clap::{App, Arg};
@@ -24,22 +24,20 @@ pub mod order;
 pub mod state;
 pub mod tests;
 pub mod util;
+pub mod rpc;
 
 #[cfg(test)]
 pub mod book_tests;
 
 use crate::args::Arguments;
 use crate::order::{AddressWrapper, OrderId};
+use crate::book::{Book};
 use crate::state::OmeState;
+use crate::rpc::{get_known_markets, get_external_book};
 
 #[tokio::main]
 async fn main() {
     pretty_env_logger::init();
-
-    // make request to api to get all known markets
-    // for each known market
-        // fetch the orderbook state from the api (api must return a valid ExternalBook)
-        // convert the ExternalBook to Book and store in the OME
 
     /* define our command-line interface using Clap's builder syntax */
     let matches = App::new("Tracer OME")
@@ -61,13 +59,6 @@ async fn main() {
                 .takes_value(true),
         )
         .arg(
-            Arg::with_name("dumpfile")
-                .long("dumpfile")
-                .value_name("dumpfile")
-                .help("The path to the dump file to use for state resumes")
-                .takes_value(true),
-        )
-        .arg(
             Arg::with_name("certificate_path")
                 .long("certificate_path")
                 .value_name("certificate_path")
@@ -86,6 +77,11 @@ async fn main() {
                 .long("force-no-tls")
                 .help("Flag to force TLS to be turned off"),
         )
+        .arg(
+            Arg::with_name("known-markets-url")
+                .long("fknown-markets-url")
+                .help("Endpoint to retrieve known market addresses from"),
+        )
         .get_matches();
 
     let arguments: Arguments = match matches.try_into() {
@@ -96,17 +92,23 @@ async fn main() {
         }
     };
 
-    let internal_state = if util::is_existing_state(&arguments.dumpfile_path) {
-        match OmeState::from_dumpfile(&arguments.dumpfile_path) {
-            Some(s) => s,
-            None => OmeState::new(),
-        }
-    } else {
-        Default::default()
-    };
+    let mut ome_state = OmeState::new();
+
+    // restore market state
+    // will panic and crash if this fails at all
+    // fetch all markets known by the api
+    let known_markets = get_known_markets(&arguments.known_markets_url).await.unwrap();
+
+    // restore each of the known books
+    for market_id in known_markets {
+        let external_book = get_external_book(&arguments.external_book_url, market_id).await.unwrap();
+        let book = Book::try_from(external_book);
+
+        ome_state.add_book(book.unwrap());
+    }
 
     /* initialise engine state */
-    let state: Arc<Mutex<OmeState>> = Arc::new(Mutex::new(internal_state));
+    let state: Arc<Mutex<OmeState>> = Arc::new(Mutex::new(ome_state));
 
     /* Clone global engine state for each handler. This is only done because of
      * the nature of move semantics for Rust closures.
