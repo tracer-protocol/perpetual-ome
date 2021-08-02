@@ -153,13 +153,14 @@ pub async fn read_book_handler(
     market: AddressWrapper,
     state: Arc<Mutex<OmeState>>,
 ) -> Result<impl Reply, Rejection> {
-    let msg: api::Message =
-        api::Message::from(match state.lock().await.book(Address::from(market)) {
+    let msg: api::Message = api::Message::from(
+        match state.lock().await.book(Address::from(market)) {
             Some(t) => api::outbound::Message::ReadBook(t.clone()),
             None => {
                 api::outbound::Message::Error(api::outbound::Error::NoSuchBook)
             }
-        });
+        },
+    );
 
     Ok(json(&msg).into_response())
 }
@@ -238,15 +239,18 @@ pub async fn read_order_handler(
 ) -> Result<impl Reply, Rejection> {
     let ome_state: MutexGuard<OmeState> = state.lock().await;
 
-    let msg: api::Message = api::Message::from(match ome_state.book(Address::from(market)) {
-        Some(book) => match book.order(id) {
-            Some(order) => api::outbound::Message::ReadOrder(order.clone()),
+    let msg: api::Message =
+        api::Message::from(match ome_state.book(Address::from(market)) {
+            Some(book) => match book.order(id) {
+                Some(order) => api::outbound::Message::ReadOrder(order.clone()),
+                None => api::outbound::Message::Error(
+                    api::outbound::Error::NoSuchOrder,
+                ),
+            },
             None => {
-                api::outbound::Message::Error(api::outbound::Error::NoSuchOrder)
+                api::outbound::Message::Error(api::outbound::Error::NoSuchBook)
             }
-        },
-        None => api::outbound::Message::Error(api::outbound::Error::NoSuchBook),
-    });
+        });
 
     Ok(warp::reply::with_status(json(&msg), StatusCode::OK))
 }

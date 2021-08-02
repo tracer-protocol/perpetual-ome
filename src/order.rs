@@ -140,7 +140,7 @@ pub enum OrderParseError {
     InvalidTimestamp,
     IntegerBounds,
     InvalidDecimal,
-    AddressWrapperError
+    AddressWrapperError,
 }
 
 impl Display for OrderParseError {
@@ -286,16 +286,16 @@ impl TryFrom<ExternalOrder> for Order {
     type Error = OrderParseError;
 
     fn try_from(value: ExternalOrder) -> Result<Self, Self::Error> {
-
         let trader: Address = match AddressWrapper::from_str(&value.user) {
             Ok(t) => Address::from(t),
             Err(e) => return Err(e.into()),
         };
 
-        let market: Address = match AddressWrapper::from_str(&value.target_tracer) {
-            Ok(t) => Address::from(t),
-            Err(e) => return Err(e.into()),
-        };
+        let market: Address =
+            match AddressWrapper::from_str(&value.target_tracer) {
+                Ok(t) => Address::from(t),
+                Err(e) => return Err(e.into()),
+            };
 
         let side: OrderSide = match OrderSide::from_str(&value.side) {
             Ok(t) => t,
@@ -337,7 +337,7 @@ impl TryFrom<ExternalOrder> for Order {
 
         let signed_data_no_prefix = match value.signed_data.strip_prefix("0x") {
             Some(t) => t,
-            None => &value.signed_data
+            None => &value.signed_data,
         };
 
         let signed_data: Vec<u8> = match hex::decode(signed_data_no_prefix) {

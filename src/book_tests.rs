@@ -3,7 +3,9 @@ use std::collections::{BTreeMap, VecDeque};
 use chrono::{DateTime, NaiveDateTime, Utc};
 use ethereum_types::{Address, U256};
 
-use crate::book::{Book, ExternalBook, BookError, Fill, MatchResult, OrderStatus};
+use crate::book::{
+    Book, BookError, ExternalBook, Fill, MatchResult, OrderStatus,
+};
 use crate::order::{Order, OrderSide};
 
 use std::convert::TryFrom;
@@ -753,7 +755,6 @@ pub async fn test_converting_book_to_external_book_and_back() {
     }
 
     let external_book = ExternalBook::from(actual_book.clone());
-
 
     let converted_book = Book::try_from(external_book);
 

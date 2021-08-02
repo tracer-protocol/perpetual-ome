@@ -3,7 +3,7 @@ use ethereum_types::Address;
 use serde::{Deserialize, Serialize};
 
 use crate::book::{Book, Fill, Fills, MatchResult, OrderStatus};
-use crate::order::{Order, ExternalOrder};
+use crate::order::{ExternalOrder, Order};
 
 #[derive(Clone, Debug, Serialize)]
 #[serde(untagged)]

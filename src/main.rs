@@ -2,7 +2,7 @@
 #![feature(async_closure)]
 #![feature(result_contains_err)]
 #![feature(destructuring_assignment)]
-use std::convert::{TryInto, TryFrom};
+use std::convert::{TryFrom, TryInto};
 use std::sync::Arc;
 
 use clap::{App, Arg};
@@ -21,19 +21,19 @@ pub mod args;
 pub mod book;
 pub mod handler;
 pub mod order;
+pub mod rpc;
 pub mod state;
 pub mod tests;
 pub mod util;
-pub mod rpc;
 
 #[cfg(test)]
 pub mod book_tests;
 
 use crate::args::Arguments;
+use crate::book::Book;
 use crate::order::{AddressWrapper, OrderId};
-use crate::book::{Book};
+use crate::rpc::{get_external_book, get_known_markets};
 use crate::state::OmeState;
-use crate::rpc::{get_known_markets, get_external_book};
 
 #[tokio::main]
 async fn main() {
@@ -104,11 +104,16 @@ async fn main() {
     // restore market state
     // will panic and crash if this fails at all
     // fetch all markets known by the api
-    let known_markets = get_known_markets(&arguments.known_markets_url).await.unwrap();
+    let known_markets = get_known_markets(&arguments.known_markets_url)
+        .await
+        .unwrap();
 
     // restore each of the known books
     for market_id in known_markets {
-        let external_book = get_external_book(&arguments.external_book_url, market_id).await.unwrap();
+        let external_book =
+            get_external_book(&arguments.external_book_url, market_id)
+                .await
+                .unwrap();
         let book = Book::try_from(external_book);
 
         ome_state.add_book(book.unwrap());

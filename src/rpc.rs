@@ -3,8 +3,8 @@ use std::fmt::Display;
 use reqwest::{header, Client, Response};
 use serde::{Deserialize, Serialize};
 
+use crate::book::ExternalBook;
 use crate::order::{ExternalOrder, Order};
-use crate::book::{ExternalBook};
 
 #[derive(Display, Debug)]
 pub enum RpcError {
@@ -39,18 +39,16 @@ pub struct CheckRequest {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct KnownMarketsResponse {
     message: String,
-    data: Vec<String>
+    data: Vec<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ExternalBookResponse {
     message: String,
-    data: ExternalBook
+    data: ExternalBook,
 }
 
-pub async fn get_known_markets(
-    address: &str,
-) -> Result<Vec<String>, RpcError> {
+pub async fn get_known_markets(address: &str) -> Result<Vec<String>, RpcError> {
     let endpoint: String = address.to_string();
     let client: Client = Client::new();
 

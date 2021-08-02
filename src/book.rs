@@ -7,21 +7,23 @@ use std::{
     fmt::{Display, Formatter},
 };
 
-
-use chrono::{DateTime, Utc, ParseError};
-use ethereum_types::{U256, FromDecStrErr};
+use chrono::{DateTime, ParseError, Utc};
+use ethereum_types::{FromDecStrErr, U256};
+use hex::FromHexError;
 use itertools::Either;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use web3::types::Address;
-use hex::FromHexError;
 
-use std::num::ParseIntError;
-use std::fmt;
-use std::str::FromStr;
 use std::convert::TryFrom;
+use std::fmt;
+use std::num::ParseIntError;
+use std::str::FromStr;
 
-use crate::order::{AddressWrapper, AddressWrapperError, ExternalOrder, Order, OrderId, OrderSide, Quantity};
+use crate::order::{
+    AddressWrapper, AddressWrapperError, ExternalOrder, Order, OrderId,
+    OrderSide, Quantity,
+};
 use crate::util::{from_hex_de, from_hex_se};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -71,7 +73,6 @@ impl From<ethabi::Error> for BookError {
     }
 }
 
-
 /// Represents an error in interpreting an external order book
 #[derive(Clone, Copy, Debug, Error, Serialize, Deserialize)]
 pub enum BookParseError {
@@ -81,7 +82,7 @@ pub enum BookParseError {
     IntegerBounds,
     InvalidDecimal,
     AddressWrapperError,
-    FromDecStrError
+    FromDecStrError,
 }
 
 impl Display for BookParseError {
@@ -559,19 +560,15 @@ impl From<Book> for ExternalBook {
 }
 
 impl TryFrom<ExternalBook> for Book {
-
     type Error = BookParseError;
 
     fn try_from(value: ExternalBook) -> Result<Self, Self::Error> {
+        let market: Address = match AddressWrapper::from_str(&value.market) {
+            Ok(t) => Address::from(t),
+            Err(e) => return Err(e.into()),
+        };
 
-        let market: Address =
-            match AddressWrapper::from_str(&value.market) {
-                Ok(t) => Address::from(t),
-                Err(e) => return Err(e.into()),
-            };
-
-        let bids: BTreeMap<U256, VecDeque<Order>> =
-            value
+        let bids: BTreeMap<U256, VecDeque<Order>> = value
             .bids
             .iter()
             .map(|(price, orders)| {
@@ -580,16 +577,13 @@ impl TryFrom<ExternalBook> for Book {
                     U256::from_dec_str(price).unwrap(),
                     orders
                         .iter()
-                        .map(|order| {
-                            Order::try_from(order.clone()).unwrap()
-                        })
-                        .collect()
+                        .map(|order| Order::try_from(order.clone()).unwrap())
+                        .collect(),
                 )
             })
             .collect();
 
-        let asks: BTreeMap<U256, VecDeque<Order>> =
-            value
+        let asks: BTreeMap<U256, VecDeque<Order>> = value
             .asks
             .iter()
             .map(|(price, orders)| {
@@ -598,7 +592,7 @@ impl TryFrom<ExternalBook> for Book {
                     orders
                         .iter()
                         .map(|order| Order::try_from(order.clone()).unwrap())
-                        .collect()
+                        .collect(),
                 )
             })
             .collect();
@@ -620,7 +614,7 @@ impl TryFrom<ExternalBook> for Book {
             ltp,
             depth: value.depth,
             crossed: value.crossed,
-            spread
+            spread,
         })
     }
 }

@@ -104,25 +104,26 @@ impl TryFrom<ArgMatches<'_>> for Arguments {
         }
 
         /* handle known markets url */
-        let known_markets_url = if let Some(t) = value.value_of("known_markets_url") {
-            t.to_string()
-        } else {
-            match env::var("KNOWN_MARKETS_URL") {
-                Ok(t) => t,
-                Err(_e) => return Err("Invalid known markets url")
-            }
-        };
+        let known_markets_url =
+            if let Some(t) = value.value_of("known_markets_url") {
+                t.to_string()
+            } else {
+                match env::var("KNOWN_MARKETS_URL") {
+                    Ok(t) => t,
+                    Err(_e) => return Err("Invalid known markets url"),
+                }
+            };
 
         /* handle external book url */
-        let external_book_url = if let Some(t) = value.value_of("external_book_url") {
-            t.to_string()
-        } else {
-            match env::var("EXTERNAL_BOOK_URL") {
-                Ok(t) => t,
-                Err(_e) => return Err("Invalid external book url")
-            }
-        };
-
+        let external_book_url =
+            if let Some(t) = value.value_of("external_book_url") {
+                t.to_string()
+            } else {
+                match env::var("EXTERNAL_BOOK_URL") {
+                    Ok(t) => t,
+                    Err(_e) => return Err("Invalid external book url"),
+                }
+            };
 
         Ok(Self {
             listen_address,
