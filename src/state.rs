@@ -1,7 +1,5 @@
 //! Contains logic for interacting with the OME's state
 use std::collections::HashMap;
-use std::fs::read_to_string;
-use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 use web3::types::Address;

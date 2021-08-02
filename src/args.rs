@@ -17,9 +17,6 @@ pub const DEFAULT_KEYFILE: &str = "pkey.secret";
 
 pub const DEFAULT_TLS_TOGGLE: bool = false;
 
-pub const DEFAULT_KNOWN_MARKETS_URL: &str = "http://localhost:3030/book";
-pub const DEFAULT_EXTERNAL_BOOK_URL: &str = "http://localhost:3030/book/";
-
 #[derive(Clone, Debug)]
 pub struct Arguments {
     pub listen_address: IpAddr,
@@ -41,8 +38,6 @@ impl TryFrom<ArgMatches<'_>> for Arguments {
         let mut certificate_path: PathBuf = DEFAULT_CERTFILE.into();
         let mut private_key_path: PathBuf = DEFAULT_KEYFILE.into();
         let mut force_no_tls: bool = DEFAULT_TLS_TOGGLE;
-        let mut known_markets_url: String = DEFAULT_KNOWN_MARKETS_URL.to_string();
-        let mut external_book_url: String = DEFAULT_EXTERNAL_BOOK_URL.to_string();
 
         /* handle listening address */
         if let Some(t) = value.value_of("listen") {
@@ -109,24 +104,24 @@ impl TryFrom<ArgMatches<'_>> for Arguments {
         }
 
         /* handle known markets url */
-        if let Some(t) = value.value_of("known_markets_url") {
-            known_markets_url = t.to_string();
+        let known_markets_url = if let Some(t) = value.value_of("known_markets_url") {
+            t.to_string()
         } else {
             match env::var("KNOWN_MARKETS_URL") {
-                Ok(t) => known_markets_url = t,
+                Ok(t) => t,
                 Err(_e) => return Err("Invalid known markets url")
             }
-        }
+        };
 
         /* handle external book url */
-        if let Some(t) = value.value_of("external_book_url") {
-            external_book_url = t.to_string();
+        let external_book_url = if let Some(t) = value.value_of("external_book_url") {
+            t.to_string()
         } else {
             match env::var("EXTERNAL_BOOK_URL") {
-                Ok(t) => external_book_url = t,
+                Ok(t) => t,
                 Err(_e) => return Err("Invalid external book url")
             }
-        }
+        };
 
 
         Ok(Self {

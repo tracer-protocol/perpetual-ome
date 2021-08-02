@@ -1,12 +1,8 @@
-use std::fs;
 use std::path::Path;
-use std::sync::{Arc, Mutex};
 
 use ethereum_types::U256;
 use serde::de::{Error, Unexpected};
 use serde::{Deserialize, Deserializer, Serializer};
-
-use crate::state::OmeState;
 
 /// Helper to convert from hexadecimal strings to decimal strings
 ///

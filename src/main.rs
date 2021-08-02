@@ -78,9 +78,16 @@ async fn main() {
                 .help("Flag to force TLS to be turned off"),
         )
         .arg(
-            Arg::with_name("known-markets-url")
-                .long("fknown-markets-url")
-                .help("Endpoint to retrieve known market addresses from"),
+            Arg::with_name("known_markets_url")
+                .long("known_markets_url")
+                .help("Endpoint to retrieve known market addresses from")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("external_book_url")
+                .long("external_book_url")
+                .help("Endpoint to retrieve external book by market id from")
+                .takes_value(true),
         )
         .get_matches();
 
