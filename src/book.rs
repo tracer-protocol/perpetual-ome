@@ -222,6 +222,10 @@ impl Book {
             }
 
             for opposite in opposites {
+                if opposite.remaining.is_zero() {
+                    continue;
+                }
+
                 /* no self-trading allowed */
                 if opposite.trader == order.trader {
                     info!("Self-trade, skipping...");
