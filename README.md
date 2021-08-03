@@ -17,7 +17,7 @@ Follow the above steps to install all the required dependencies.
 To set the debugging level, use
 `export RUST_LOG=info`
 To run the OME, with the executioner running locally, use
-`cargo run -- --known_markets_url "http://localhost:3030/book" --external_book_url "http://localhost:3030/book/" --force-no-tls`
+`cargo run -- --known_markets_url "http://localhost:3030/book" --external_book_url "http://localhost:3030/state/" --force-no-tls`
 
 ## ENV Variables
 The OME supports the following ENV variables
