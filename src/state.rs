@@ -1,7 +1,5 @@
 //! Contains logic for interacting with the OME's state
 use std::collections::HashMap;
-use std::fs::read_to_string;
-use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 use web3::types::Address;
@@ -19,18 +17,6 @@ impl OmeState {
     pub fn new() -> Self {
         Self {
             books: HashMap::new(),
-        }
-    }
-
-    pub fn from_dumpfile(path: &Path) -> Option<Self> {
-        let dump_data: String = match read_to_string(path) {
-            Ok(t) => t,
-            Err(_e) => return None,
-        };
-
-        match serde_json::from_str(&dump_data) {
-            Ok(t) => Some(t),
-            Err(_e) => None,
         }
     }
 
