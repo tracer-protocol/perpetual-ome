@@ -4,7 +4,6 @@ use reqwest::{header, Client, Response};
 use serde::{Deserialize, Serialize};
 
 use crate::book::ExternalBook;
-use crate::order::{ExternalOrder, Order};
 
 #[derive(Display, Debug)]
 pub enum RpcError {
@@ -23,17 +22,6 @@ impl From<rustc_hex::FromHexError> for RpcError {
     fn from(_value: rustc_hex::FromHexError) -> Self {
         Self::InvalidResponse
     }
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct MatchRequest {
-    maker: ExternalOrder,
-    taker: ExternalOrder,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct CheckRequest {
-    order: ExternalOrder,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -95,35 +83,4 @@ pub async fn get_external_book(
     info!("{} said {:?}", endpoint, book);
 
     Ok(book.data)
-}
-
-pub async fn get_external_boo_k(
-    order: Order,
-    address: String,
-) -> Result<bool, RpcError> {
-    let endpoint: String = address + "/check";
-    let client: Client = Client::new();
-    let payload: CheckRequest = CheckRequest {
-        order: ExternalOrder::from(order.clone()),
-    };
-
-    info!(
-        "Checking order validity by sending {} to {}...",
-        order, endpoint
-    );
-
-    let response: Response = match client
-        .post(endpoint.clone())
-        .header(header::CONTENT_TYPE, "application/json")
-        .body(serde_json::to_string(&payload).unwrap())
-        .send()
-        .await
-    {
-        Ok(t) => t,
-        Err(e) => return Err(e.into()),
-    };
-
-    info!("{} said {}", endpoint, response.status());
-
-    Ok(response.status().is_success())
 }

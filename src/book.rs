@@ -572,7 +572,6 @@ impl TryFrom<ExternalBook> for Book {
             .bids
             .iter()
             .map(|(price, orders)| {
-                println!("price {}", price);
                 (
                     U256::from_dec_str(price).unwrap(),
                     orders
