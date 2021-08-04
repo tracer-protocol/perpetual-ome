@@ -157,12 +157,23 @@ pub async fn read_book_handler(
         match state.lock().await.book(Address::from(market)) {
             Some(t) => api::outbound::Message::ReadBook(t.clone()),
             None => {
-                api::outbound::Message::Error(api::outbound::Error::NoSuchBook)
+                let status: StatusCode = StatusCode::NOT_FOUND;
+                let msg: api::Message =
+                    api::Message::from(api::outbound::Message::Error(
+                        api::outbound::Error::NoSuchBook,
+                    ));
+                return Ok(warp::reply::with_status(
+                    warp::reply::json(&msg),
+                    status,
+                ));
             }
         },
     );
 
-    Ok(json(&msg).into_response())
+    Ok(warp::reply::with_status(
+        warp::reply::json(&msg),
+        StatusCode::OK,
+    ))
 }
 
 /// REST API route handler for creating a single order
