@@ -16,10 +16,9 @@ spec:
     spec:
       containers:
       - name: tracer-ome
-        image: gcr.io/tracer-protocol-testing/ome:latest
+        image: gcr.io/tracer-protocol-testing/ome:0.0.1
         envFrom:
         - configMapRef:
             name: ome-env
         ports:
         - containerPort: 8989
-      
