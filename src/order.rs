@@ -16,7 +16,7 @@ use web3::types::{Address, H256, U256};
 // Wrapper for the web3::Address type such that strings can be passed to
 // handlers with and without the 0x prefix
 #[derive(PartialEq, Copy, Clone)]
-pub struct AddressWrapper(Address);
+pub struct AddressWrapper(pub Address);
 
 pub enum AddressWrapperError {
     NotValidPrefixError,
@@ -58,7 +58,22 @@ impl From<AddressWrapper> for Address {
     }
 }
 
+impl From<Address> for AddressWrapper {
+    fn from(s: Address) -> AddressWrapper {
+        Self(s)
+    }
+}
+
+impl AddressWrapper {
+    pub fn to_hex_string(&self) -> String {
+        let address = Address::from(*self);
+        let bytes: Vec<u8> = address.as_ref().to_vec();
+        hex::encode(&bytes)
+    }
+}
+
 pub type OrderId = H256;
+pub type Quantity = U256;
 
 /// Represents which side of the market an order is on
 ///
@@ -95,7 +110,7 @@ pub struct Order {
     pub market: Address,
     pub side: OrderSide,
     pub price: U256,
-    pub quantity: U256,
+    pub quantity: Quantity,
     pub remaining: U256,
     pub expiration: DateTime<Utc>,
     pub created: DateTime<Utc>,
@@ -125,6 +140,7 @@ pub enum OrderParseError {
     InvalidTimestamp,
     IntegerBounds,
     InvalidDecimal,
+    AddressWrapperError,
 }
 
 impl Display for OrderParseError {
@@ -158,6 +174,12 @@ impl From<ParseError> for OrderParseError {
 impl From<ParseIntError> for OrderParseError {
     fn from(_value: ParseIntError) -> Self {
         OrderParseError::IntegerBounds
+    }
+}
+
+impl From<AddressWrapperError> for OrderParseError {
+    fn from(_value: AddressWrapperError) -> Self {
+        OrderParseError::AddressWrapperError
     }
 }
 
@@ -202,7 +224,7 @@ impl Order {
         market: Address,
         side: OrderSide,
         price: U256,
-        quantity: U256,
+        quantity: Quantity,
         expiration: DateTime<Utc>,
         created: DateTime<Utc>,
         signed_data: Vec<u8>,
@@ -264,15 +286,16 @@ impl TryFrom<ExternalOrder> for Order {
     type Error = OrderParseError;
 
     fn try_from(value: ExternalOrder) -> Result<Self, Self::Error> {
-        let trader: Address = match Address::from_str(&value.user) {
-            Ok(t) => t,
+        let trader: Address = match AddressWrapper::from_str(&value.user) {
+            Ok(t) => Address::from(t),
             Err(e) => return Err(e.into()),
         };
 
-        let market: Address = match Address::from_str(&value.target_tracer) {
-            Ok(t) => t,
-            Err(e) => return Err(e.into()),
-        };
+        let market: Address =
+            match AddressWrapper::from_str(&value.target_tracer) {
+                Ok(t) => Address::from(t),
+                Err(e) => return Err(e.into()),
+            };
 
         let side: OrderSide = match OrderSide::from_str(&value.side) {
             Ok(t) => t,
@@ -312,7 +335,12 @@ impl TryFrom<ExternalOrder> for Order {
             DateTime::from_utc(NaiveDateTime::from_timestamp(timestamp, 0), Utc)
         };
 
-        let signed_data: Vec<u8> = match hex::decode(&value.signed_data) {
+        let signed_data_no_prefix = match value.signed_data.strip_prefix("0x") {
+            Some(t) => t,
+            None => &value.signed_data,
+        };
+
+        let signed_data: Vec<u8> = match hex::decode(signed_data_no_prefix) {
             Ok(t) => t,
             Err(e) => return Err(e.into()),
         };

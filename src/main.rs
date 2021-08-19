@@ -2,7 +2,7 @@
 #![feature(async_closure)]
 #![feature(result_contains_err)]
 #![feature(destructuring_assignment)]
-use std::convert::TryInto;
+use std::convert::{TryFrom, TryInto};
 use std::sync::Arc;
 
 use clap::{App, Arg};
@@ -16,6 +16,7 @@ extern crate enum_display_derive;
 extern crate log;
 extern crate pretty_env_logger;
 
+pub mod api;
 pub mod args;
 pub mod book;
 pub mod handler;
@@ -29,7 +30,9 @@ pub mod util;
 pub mod book_tests;
 
 use crate::args::Arguments;
+use crate::book::Book;
 use crate::order::{AddressWrapper, OrderId};
+use crate::rpc::{get_external_book, get_known_markets};
 use crate::state::OmeState;
 
 #[tokio::main]
@@ -56,20 +59,6 @@ async fn main() {
                 .takes_value(true),
         )
         .arg(
-            Arg::with_name("dumpfile")
-                .long("dumpfile")
-                .value_name("dumpfile")
-                .help("The path to the dump file to use for state resumes")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::with_name("executioner_address")
-                .long("executioner_address")
-                .value_name("executioner_address")
-                .help("Address of the Web3 executioner")
-                .takes_value(true),
-        )
-        .arg(
             Arg::with_name("certificate_path")
                 .long("certificate_path")
                 .value_name("certificate_path")
@@ -88,6 +77,18 @@ async fn main() {
                 .long("force-no-tls")
                 .help("Flag to force TLS to be turned off"),
         )
+        .arg(
+            Arg::with_name("known_markets_url")
+                .long("known_markets_url")
+                .help("Endpoint to retrieve known market addresses from")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("external_book_url")
+                .long("external_book_url")
+                .help("Endpoint to retrieve external book by market id from")
+                .takes_value(true),
+        )
         .get_matches();
 
     let arguments: Arguments = match matches.try_into() {
@@ -98,17 +99,28 @@ async fn main() {
         }
     };
 
-    let internal_state = if util::is_existing_state(&arguments.dumpfile_path) {
-        match OmeState::from_dumpfile(&arguments.dumpfile_path) {
-            Some(s) => s,
-            None => OmeState::new(),
-        }
-    } else {
-        Default::default()
-    };
+    let mut ome_state = OmeState::new();
+
+    // restore market state
+    // will panic and crash if this fails at all
+    // fetch all markets known by the api
+    let known_markets = get_known_markets(&arguments.known_markets_url)
+        .await
+        .unwrap();
+
+    // restore each of the known books
+    for market_id in known_markets {
+        let external_book =
+            get_external_book(&arguments.external_book_url, market_id)
+                .await
+                .unwrap();
+        let book = Book::try_from(external_book);
+
+        ome_state.add_book(book.unwrap());
+    }
 
     /* initialise engine state */
-    let state: Arc<Mutex<OmeState>> = Arc::new(Mutex::new(internal_state));
+    let state: Arc<Mutex<OmeState>> = Arc::new(Mutex::new(ome_state));
 
     /* Clone global engine state for each handler. This is only done because of
      * the nature of move semantics for Rust closures.
@@ -142,12 +154,10 @@ async fn main() {
         .and_then(handler::read_book_handler);
 
     /* define CRUD routes for orders */
-    let tmp_args: Arguments = arguments.clone();
     let create_order_route = warp::path!("book" / AddressWrapper / "order")
         .and(warp::post())
         .and(warp::body::json())
         .and(warp::any().map(move || create_order_state.clone()))
-        .and(warp::any().map(move || tmp_args.executioner_address.clone()))
         .and_then(handler::create_order_handler);
     let read_order_route =
         warp::path!("book" / AddressWrapper / "order" / OrderId)

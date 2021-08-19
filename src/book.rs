@@ -1,21 +1,40 @@
+#![allow(dead_code)]
 //! Contains logic and type definitions for the order book itself and the
 //! matching engine also
 use std::{
     cmp::Ordering,
     collections::{BTreeMap, VecDeque},
-    fmt::Display,
+    fmt::{Display, Formatter},
 };
 
-use chrono::{DateTime, Utc};
-use ethereum_types::U256;
+use chrono::{DateTime, ParseError, Utc};
+use ethereum_types::{FromDecStrErr, U256};
+use hex::FromHexError;
 use itertools::Either;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use web3::types::Address;
 
-use crate::order::{ExternalOrder, Order, OrderId, OrderSide};
-use crate::rpc;
+use std::convert::TryFrom;
+use std::fmt;
+use std::num::ParseIntError;
+use std::str::FromStr;
+
+use crate::order::{
+    AddressWrapper, AddressWrapperError, ExternalOrder, Order, OrderId,
+    OrderSide, Quantity,
+};
 use crate::util::{from_hex_de, from_hex_se};
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct Fill {
+    pub maker: OrderId,
+    pub taker: OrderId,
+    pub quantity: Quantity,
+    pub price: U256,
+}
+
+pub type Fills = Vec<Fill>;
 
 /// Represents an order book for a particular Tracer market
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
@@ -54,13 +73,75 @@ impl From<ethabi::Error> for BookError {
     }
 }
 
+/// Represents an error in interpreting an external order book
+#[derive(Clone, Copy, Debug, Error, Serialize, Deserialize)]
+pub enum BookParseError {
+    InvalidHexadecimal,
+    InvalidSide,
+    InvalidTimestamp,
+    IntegerBounds,
+    InvalidDecimal,
+    AddressWrapperError,
+    FromDecStrError,
+}
+
+impl Display for BookParseError {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match self {
+            Self::InvalidHexadecimal => write!(f, "Invalid hexadecimal"),
+            _ => write!(f, "Unknown"),
+        }
+    }
+}
+
+impl From<FromHexError> for BookParseError {
+    fn from(_value: FromHexError) -> Self {
+        BookParseError::InvalidHexadecimal
+    }
+}
+
+impl From<rustc_hex::FromHexError> for BookParseError {
+    fn from(_value: rustc_hex::FromHexError) -> Self {
+        BookParseError::InvalidHexadecimal
+    }
+}
+
+impl From<ParseError> for BookParseError {
+    fn from(_value: ParseError) -> Self {
+        BookParseError::InvalidTimestamp
+    }
+}
+
+impl From<ParseIntError> for BookParseError {
+    fn from(_value: ParseIntError) -> Self {
+        BookParseError::IntegerBounds
+    }
+}
+
+impl From<AddressWrapperError> for BookParseError {
+    fn from(_value: AddressWrapperError) -> Self {
+        BookParseError::AddressWrapperError
+    }
+}
+
+impl From<FromDecStrErr> for BookParseError {
+    fn from(_value: FromDecStrErr) -> Self {
+        BookParseError::FromDecStrError
+    }
+}
+
 #[derive(
     Clone, Copy, Debug, Display, Error, Serialize, Deserialize, PartialEq, Eq,
 )]
 pub enum OrderStatus {
-    Add,
+    Placed,
     PartialMatch,
     FullMatch,
+}
+
+pub struct MatchResult {
+    pub fills: Fills,
+    pub order_status: OrderStatus,
 }
 
 impl Book {
@@ -180,14 +261,39 @@ impl Book {
         }
     }
 
+    fn build_match_result(
+        order_status: OrderStatus,
+        fills: Fills,
+    ) -> MatchResult {
+        MatchResult {
+            fills,
+            order_status,
+        }
+    }
+
+    fn build_fill(
+        maker: OrderId,
+        taker: OrderId,
+        quantity: Quantity,
+        price: U256,
+    ) -> Fill {
+        Fill {
+            maker,
+            taker,
+            quantity,
+            price,
+        }
+    }
+
     #[allow(unused_must_use)]
     async fn r#match(
         &mut self,
         mut order: Order,
-        executioner_address: String,
         opposing_top: Option<U256>,
-    ) -> Result<OrderStatus, BookError> {
+    ) -> Result<MatchResult, BookError> {
         info!("Matching {}...", order);
+
+        let mut fills: Fills = Vec::new();
 
         let opposing_side: &mut BTreeMap<U256, VecDeque<Order>> =
             match order.side {
@@ -207,7 +313,7 @@ impl Book {
         {
             info!("{} does not cross, adding...", order);
             self.add_order(order);
-            return Ok(OrderStatus::Add);
+            return Ok(Book::build_match_result(OrderStatus::Placed, fills));
         }
 
         let opposing_side_iterator = match order.side {
@@ -240,16 +346,15 @@ impl Book {
                 order = Book::fill(order, amount);
                 *opposite = Book::fill(opposite.clone(), amount);
 
+                fills.push(Book::build_fill(
+                    opposite.id,
+                    order.id,
+                    amount,
+                    opposite.price,
+                ));
+
                 self.ltp = *price;
                 info!("LTP updated, is now {}", self.ltp);
-
-                info!("Forwarding {} and {}...", order, opposite);
-                rpc::send_matched_orders(
-                    order.clone(),
-                    opposite.clone(),
-                    executioner_address.clone(),
-                )
-                .await;
 
                 running_total -= amount;
 
@@ -265,9 +370,9 @@ impl Book {
         /* if our incoming order has any volume left, add it to the book */
         if running_total > U256::zero() {
             self.add_order(order);
-            Ok(OrderStatus::PartialMatch)
+            Ok(Book::build_match_result(OrderStatus::PartialMatch, fills))
         } else {
-            Ok(OrderStatus::FullMatch)
+            Ok(Book::build_match_result(OrderStatus::FullMatch, fills))
         }
     }
 
@@ -310,17 +415,12 @@ impl Book {
     pub async fn submit(
         &mut self,
         order: Order,
-        executioner_address: String,
-    ) -> Result<OrderStatus, BookError> {
+    ) -> Result<MatchResult, BookError> {
         info!("Submitting {}...", order);
 
-        let match_result: Result<OrderStatus, BookError> = match order.side {
-            OrderSide::Bid => {
-                self.r#match(order, executioner_address, self.top().1).await
-            }
-            OrderSide::Ask => {
-                self.r#match(order, executioner_address, self.top().0).await
-            }
+        let match_result: Result<MatchResult, BookError> = match order.side {
+            OrderSide::Bid => self.r#match(order, self.top().1).await,
+            OrderSide::Ask => self.r#match(order, self.top().0).await,
         };
 
         self.update();
@@ -424,7 +524,7 @@ pub struct ExternalBook {
 impl From<Book> for ExternalBook {
     fn from(value: Book) -> Self {
         Self {
-            market: value.market.to_string(),
+            market: AddressWrapper::from(value.market).to_hex_string(),
             bids: value
                 .bids
                 .iter()
@@ -456,5 +556,64 @@ impl From<Book> for ExternalBook {
             crossed: value.crossed,
             spread: value.spread.to_string(),
         }
+    }
+}
+
+impl TryFrom<ExternalBook> for Book {
+    type Error = BookParseError;
+
+    fn try_from(value: ExternalBook) -> Result<Self, Self::Error> {
+        let market: Address = match AddressWrapper::from_str(&value.market) {
+            Ok(t) => Address::from(t),
+            Err(e) => return Err(e.into()),
+        };
+
+        let bids: BTreeMap<U256, VecDeque<Order>> = value
+            .bids
+            .iter()
+            .map(|(price, orders)| {
+                (
+                    U256::from_dec_str(price).unwrap(),
+                    orders
+                        .iter()
+                        .map(|order| Order::try_from(order.clone()).unwrap())
+                        .collect(),
+                )
+            })
+            .collect();
+
+        let asks: BTreeMap<U256, VecDeque<Order>> = value
+            .asks
+            .iter()
+            .map(|(price, orders)| {
+                (
+                    U256::from_dec_str(price).unwrap(),
+                    orders
+                        .iter()
+                        .map(|order| Order::try_from(order.clone()).unwrap())
+                        .collect(),
+                )
+            })
+            .collect();
+
+        let ltp: U256 = match U256::from_dec_str(&value.ltp) {
+            Ok(t) => t,
+            Err(e) => return Err(e.into()),
+        };
+
+        let spread: U256 = match U256::from_dec_str(&value.spread) {
+            Ok(t) => t,
+            Err(e) => return Err(e.into()),
+        };
+
+        Ok(Self {
+            market,
+            bids,
+            asks,
+            ltp,
+            depth: value.depth,
+            crossed: value.crossed,
+            spread,
+        })
     }
 }

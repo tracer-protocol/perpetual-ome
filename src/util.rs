@@ -1,12 +1,8 @@
-use std::fs;
 use std::path::Path;
-use std::sync::{Arc, Mutex};
 
 use ethereum_types::U256;
 use serde::de::{Error, Unexpected};
 use serde::{Deserialize, Deserializer, Serializer};
-
-use crate::state::OmeState;
 
 /// Helper to convert from hexadecimal strings to decimal strings
 ///
@@ -44,8 +40,4 @@ where
 
 pub fn is_existing_state(path: &Path) -> bool {
     path.exists()
-}
-
-pub fn dump_state(state: Arc<Mutex<OmeState>>, path: &Path) {
-    fs::write(path, serde_json::to_string(&state).unwrap()).unwrap()
 }
