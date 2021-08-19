@@ -1,11 +1,9 @@
 use std::fmt::Display;
-use std::str::FromStr;
 
 use reqwest::{header, Client, Response};
 use serde::{Deserialize, Serialize};
-use web3::types::H160;
 
-use crate::order::{ExternalOrder, Order};
+use crate::book::ExternalBook;
 
 #[derive(Display, Debug)]
 pub enum RpcError {
@@ -26,37 +24,27 @@ impl From<rustc_hex::FromHexError> for RpcError {
     }
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct MatchRequest {
-    maker: ExternalOrder,
-    taker: ExternalOrder,
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct KnownMarketsResponse {
+    message: String,
+    data: Vec<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct CheckRequest {
-    order: ExternalOrder,
+pub struct ExternalBookResponse {
+    message: String,
+    data: ExternalBook,
 }
 
-#[allow(unused_must_use)]
-pub async fn check_order_validity(
-    order: Order,
-    address: String,
-) -> Result<bool, RpcError> {
-    let endpoint: String = address + "/check";
+pub async fn get_known_markets(address: &str) -> Result<Vec<String>, RpcError> {
+    let endpoint: String = address.to_string();
     let client: Client = Client::new();
-    let payload: CheckRequest = CheckRequest {
-        order: ExternalOrder::from(order.clone()),
-    };
 
-    info!(
-        "Checking order validity by sending {} to {}...",
-        order, endpoint
-    );
+    info!("Fetching known markets from {}...", endpoint);
 
     let response: Response = match client
-        .post(endpoint.clone())
+        .get(endpoint.clone())
         .header(header::CONTENT_TYPE, "application/json")
-        .body(serde_json::to_string(&payload).unwrap())
         .send()
         .await
     {
@@ -64,54 +52,35 @@ pub async fn check_order_validity(
         Err(e) => return Err(e.into()),
     };
 
-    info!("{} said {}", endpoint, response.status());
+    let markets: KnownMarketsResponse = response.json().await?;
 
-    Ok(response.status().is_success())
+    info!("{} said {:?}", endpoint, markets);
+
+    Ok(markets.data)
 }
 
-pub async fn send_matched_orders(
-    maker: Order,
-    taker: Order,
-    address: String,
-) -> Result<H160, RpcError> {
-    info!(
-        "Forwarding matched pair ({}, {}) to {}...",
-        maker, taker, address
-    );
-
-    let payload: MatchRequest = MatchRequest {
-        maker: maker.into(),
-        taker: taker.into(),
-    };
+pub async fn get_external_book(
+    address: &str,
+    market_id: String,
+) -> Result<ExternalBook, RpcError> {
+    let endpoint: String = address.to_string();
     let client: Client = Client::new();
-    let endpoint: String = address.clone() + "/submit";
 
-    /* post the matched orders to the forwarder */
-    let result: Response = match client
-        .post(endpoint)
+    info!("Fetching external book from {}...", endpoint);
+
+    let response: Response = match client
+        .get(endpoint.clone() + &market_id)
         .header(header::CONTENT_TYPE, "application/json")
-        .body(serde_json::to_string(&payload).unwrap())
         .send()
         .await
     {
         Ok(t) => t,
-        Err(e) => {
-            return Err(RpcError::from(e));
-        }
+        Err(e) => return Err(e.into()),
     };
 
-    info!("{} said {}", address, result.status());
+    let book: ExternalBookResponse = response.json().await?;
 
-    /* extract the transaction hash from the response body */
-    let hash: H160 = match result.text().await {
-        Ok(t) => match H160::from_str(&t) {
-            Ok(s) => s,
-            Err(l) => {
-                return Err(RpcError::from(l));
-            }
-        },
-        Err(e) => return Err(RpcError::from(e)),
-    };
+    info!("{} said {:?}", endpoint, book);
 
-    Ok(hash)
+    Ok(book.data)
 }

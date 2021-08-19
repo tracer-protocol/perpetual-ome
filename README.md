@@ -17,14 +17,14 @@ Follow the above steps to install all the required dependencies.
 To set the debugging level, use
 `export RUST_LOG=info`
 To run the OME, with the executioner running locally, use
-`cargo run -- --executioner_address "http://localhost:3000" --force-no-tls`
+`cargo run -- --known_markets_url "http://localhost:3030/book" --external_book_url "http://localhost:3030/state/" --force-no-tls`
 
 ## ENV Variables
 The OME supports the following ENV variables
-- executioner_address: The IP address of the executioner instance
-- port: The listening port of the OME
-- address: The listening address of the OME
-- dumpfile: The filepath to dump all orders on shutdown
+- `known_markets_url`: an endpoint which will return a list of known markets upon a GET request
+- `external_book_url`: an endpoint which will return an external book upon a GET request. marketId will be concatenated to this url
+- `port`: The listening port of the OME
+- `address`: The listening address of the OME
 
 ## Deployment
 To deploy changes to GCP, use the following.
