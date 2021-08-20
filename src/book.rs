@@ -42,11 +42,6 @@ pub struct Book {
     pub market: Address, /* the address of the Tracer market */
     pub bids: BTreeMap<U256, VecDeque<Order>>, /* buy-side */
     pub asks: BTreeMap<U256, VecDeque<Order>>, /* sell-side */
-    #[serde(
-        serialize_with = "from_hex_se",
-        deserialize_with = "from_hex_de",
-        rename = "LTP"
-    )]
     pub ltp: U256, /* last traded price */
     pub depth: (usize, usize), /* depth  */
     pub crossed: bool,   /* is book crossed? */
