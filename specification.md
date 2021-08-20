@@ -2,7 +2,7 @@
 
 ## Document Metadata ##
 
-**Version**: 0.5.0 
+**Version**: 0.5.0
 
 **Authors**: Jack McPherson \<[jackm@lionsmane.dev](mailto:jackm@lionsmane.dev)\>
 
@@ -86,7 +86,7 @@ market. It is essentially a container type holding orders.
 | Market | Ethereum address | The Etheruem address of the Tracer Perpetual Swaps smart contract for the market |
 | Bids | Mapping from prices to collections of orders | The bid side of the market |
 | Asks | Mapping from prices to collections of orders | The ask side of the market |
-| LTP | 256-bit unsigned integer | The last traded price of the market |
+| ltp | 256-bit unsigned integer | The last traded price of the market |
 | Depth | Pair of 256-bit unsigned integers | The depth of each side of the order book (i.e., bid then ask) |
 | Crossed | Boolean | Whether the book is currently crossed or not |
 | Spread | 256-bit signed integer | The current spread of the book |
@@ -290,7 +290,7 @@ An example response payload is:
                 }
         ]
     },
-    "LTP": "320000000000000000000",
+    "ltp": "320000000000000000000",
     "depth": [
         2,
         1

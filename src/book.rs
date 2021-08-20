@@ -349,7 +349,7 @@ impl Book {
                 ));
 
                 self.ltp = *price;
-                info!("LTP updated, is now {}", self.ltp);
+                info!("ltp updated, is now {}", self.ltp);
 
                 running_total -= amount;
 
