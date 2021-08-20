@@ -42,12 +42,7 @@ pub struct Book {
     pub market: Address, /* the address of the Tracer market */
     pub bids: BTreeMap<U256, VecDeque<Order>>, /* buy-side */
     pub asks: BTreeMap<U256, VecDeque<Order>>, /* sell-side */
-    #[serde(
-        serialize_with = "from_hex_se",
-        deserialize_with = "from_hex_de",
-        rename = "LTP"
-    )]
-    pub ltp: U256, /* last traded price */
+    pub ltp: U256,       /* last traded price */
     pub depth: (usize, usize), /* depth  */
     pub crossed: bool,   /* is book crossed? */
     #[serde(serialize_with = "from_hex_se", deserialize_with = "from_hex_de")]
@@ -354,7 +349,7 @@ impl Book {
                 ));
 
                 self.ltp = *price;
-                info!("LTP updated, is now {}", self.ltp);
+                info!("ltp updated, is now {}", self.ltp);
 
                 running_total -= amount;
 
