@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: tracer-ome
-        image: gcr.io/tracer-protocol-testing/ome:0.0.1
+        image: gcr.io/tracer-protocol-testing/ome:0.0.2
         envFrom:
         - configMapRef:
             name: ome-env
