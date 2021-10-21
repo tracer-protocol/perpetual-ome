@@ -4,7 +4,7 @@ This repository contains the source code for the Tracer Order Matching Engine (O
 
 To get up to speed with development:
 
-    $ git clone git@github.com:securedatalinks/tracer-ome.git
+    $ git clone git@github.com:tracer-protocol/perpetual-ome.git
     $ cd tracer-ome
     $ rustup override set nightly
     $ cargo build
